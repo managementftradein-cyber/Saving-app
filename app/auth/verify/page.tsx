@@ -2,48 +2,56 @@
 
 import { useState, type FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 function VerifyForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
   const email = searchParams.get("email") ?? "";
+  const userId = searchParams.get("userId") ?? "";
 
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type: "signup",
+    const res = await fetch("/api/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ destination: email, purpose: "signup", code }),
     });
-
+    const data = await res.json();
     setLoading(false);
 
-    if (verifyError) {
-      setError("That code didn't work — check it and try again.");
+    if (!res.ok) {
+      setError(data.error ?? "That code didn't work — check it and try again.");
       return;
     }
 
     router.push("/onboarding/profile");
+    router.refresh();
   }
 
   async function handleResend() {
     setError(null);
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email,
+    setResent(false);
+    setResending(true);
+
+    const res = await fetch("/api/otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel: "email", destination: email, purpose: "signup", userId }),
     });
-    if (resendError) {
-      setError(resendError.message);
+    const data = await res.json();
+    setResending(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Could not resend code.");
       return;
     }
     setResent(true);
@@ -98,9 +106,10 @@ function VerifyForm() {
         <button
           type="button"
           onClick={handleResend}
+          disabled={resending}
           className="text-sm text-blue-deep font-semibold"
         >
-          Resend code
+          {resending ? "Resending…" : "Resend code"}
         </button>
       </form>
     </main>

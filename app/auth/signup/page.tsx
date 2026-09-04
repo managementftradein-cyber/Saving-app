@@ -25,23 +25,48 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
       },
     });
-    setLoading(false);
 
     if (signUpError) {
+      setLoading(false);
       setError(signUpError.message);
       return;
     }
 
-    // Supabase sends a 6-digit OTP to the email when "Confirm email" +
-    // OTP-style templates are enabled in the project's auth settings.
-    router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
+    const userId = signUpData.user?.id;
+
+    // Request our own OTP (sent via Resend) rather than relying on
+    // Supabase's built-in confirmation email — this project's Supabase
+    // project must have "Confirm email" turned OFF so signUp() returns an
+    // active session immediately; the middleware then gates protected
+    // routes on profiles.email_verified until this code is confirmed.
+    const otpRes = await fetch("/api/otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel: "email",
+        destination: email,
+        purpose: "signup",
+        userId,
+      }),
+    });
+
+    setLoading(false);
+
+    if (!otpRes.ok) {
+      const data = await otpRes.json().catch(() => ({}));
+      setError(data.error ?? "Account created, but the code couldn't be sent. Try resending from the next screen.");
+    }
+
+    router.push(
+      `/auth/verify?email=${encodeURIComponent(email)}&userId=${userId ?? ""}`
+    );
   }
 
   return (

@@ -44,6 +44,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // With Supabase's own "Confirm email" turned off, signUp() returns an
+  // active session immediately — so a session alone doesn't mean the user
+  // has actually confirmed their email via our own OTP flow. Check the
+  // profile flag before letting them past onboarding/dashboard.
+  if (isProtected && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email_verified")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.email_verified) {
+      const redirectUrl = new URL("/auth/verify", request.url);
+      redirectUrl.searchParams.set("email", user.email ?? "");
+      redirectUrl.searchParams.set("userId", user.id);
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   return response;
 }
 

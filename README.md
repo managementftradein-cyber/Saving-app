@@ -54,33 +54,52 @@ privileges) can.
 
 ## Setup
 
-1. **Run the schema.** In Supabase → SQL Editor, run `supabase/schema.sql`
-   first (if you haven't already), then `supabase/schema_savings_wallet.sql`.
+1. **Run the schema, in order.** In Supabase → SQL Editor:
+   `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
+   `supabase/schema_otp.sql`.
 
-2. **Get a Paystack account.** paystack.com → Settings → API Keys &
-   Webhooks. Copy the **test secret key** for development.
+2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
+   Email, disable "Confirm email." Verification is now handled entirely by
+   your own `otp_codes` table and the `/api/otp/*` routes — Supabase's
+   built-in confirmation would otherwise also try to gate sign-in and
+   conflict with this flow. `signUp()` now returns an active session
+   immediately; the middleware separately checks `profiles.email_verified`
+   before letting anyone into `/onboarding` or `/dashboard`.
 
-3. **Set the webhook URL.** In the same Paystack settings page, set the
-   webhook URL to `https://yourdomain.com/api/paystack/webhook` (must be a
-   public HTTPS URL — use a tool like ngrok while testing locally).
+3. **Get a Resend account** (resend.com) for sending the email code, and a
+   **Termii account** (termii.com) for the SMS code — or swap `lib/sms.ts`
+   for whichever gateway you prefer.
 
-4. **Copy env vars.**
+4. **Get a Paystack account.** paystack.com → Settings → API Keys &
+   Webhooks. Copy the **test secret key** for development, and set the
+   webhook URL to `https://yourdomain.com/api/paystack/webhook`.
+
+5. **Copy env vars.**
    ```bash
    cp .env.local.example .env.local
    ```
-   Fill in the Supabase URL/anon key (Project Settings → API), the
-   **service role key** (same page, `service_role` secret — never expose
-   this to the browser), and `PAYSTACK_SECRET_KEY`.
+   Fill in Supabase URL/anon key/service role key, `PAYSTACK_SECRET_KEY`,
+   `RESEND_API_KEY` + `RESEND_FROM_EMAIL`, and `TERMII_API_KEY` +
+   `TERMII_SENDER_ID`.
 
-5. **Install and run.**
+6. **Install and run.**
    ```bash
    npm install
    npm run dev
    ```
 
-6. **Deploy.** Push to GitHub, Vercel picks it up from the repo root. Add
-   all four env vars in Vercel → Settings → Environment Variables, then
-   update the Paystack webhook URL to your production domain.
+7. **Deploy.** Push to GitHub, Vercel picks it up from the repo root. Add
+   all env vars in Vercel → Settings → Environment Variables.
+
+## How verification works now
+
+Sign up → account is created (session starts immediately since Supabase's
+own confirmation is off) → `/api/otp/request` generates a code server-side
+and emails it via Resend → `/auth/verify` calls `/api/otp/verify`, which
+flips `profiles.email_verified` → middleware lets the user past
+`/onboarding` and `/dashboard` only once that flag is true. Phone
+verification works the same way, offered as an optional step inside
+onboarding, sent via Termii.
 
 ## Testing a deposit
 
