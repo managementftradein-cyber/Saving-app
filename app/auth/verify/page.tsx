@@ -8,6 +8,8 @@ function VerifyForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const userId = searchParams.get("userId") ?? "";
+  const initialSendFailed = searchParams.get("sendFailed") === "1";
+  const initialSendError = searchParams.get("sendError");
 
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,20 @@ function VerifyForm() {
         Enter the 6-digit code we sent to{" "}
         <span className="font-semibold text-ink">{email || "your email"}</span>.
       </p>
+
+      {initialSendFailed && (
+        <div className="mt-4 rounded-xl bg-[#FCECEB] border border-[#F3C6C1] p-3">
+          <p className="text-sm font-semibold text-[#C5453A]">
+            The first code couldn&apos;t be sent.
+          </p>
+          {initialSendError && (
+            <p className="text-xs text-[#C5453A]/80 mt-1">{initialSendError}</p>
+          )}
+          <p className="text-xs text-[#C5453A]/80 mt-1">
+            Tap &quot;Resend code&quot; below to try again.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
         <input

@@ -16,7 +16,7 @@ alter table public.profiles
 -- 2. OTP codes table --------------------------------------------------------
 create table if not exists public.otp_codes (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.profiles(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   channel text not null check (channel in ('email', 'phone')),
   destination text not null, -- the email address or E.164 phone number
   purpose text not null default 'signup'

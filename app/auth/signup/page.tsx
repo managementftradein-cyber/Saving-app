@@ -59,14 +59,21 @@ export default function SignupPage() {
 
     setLoading(false);
 
+    const query = new URLSearchParams({
+      email,
+      userId: userId ?? "",
+    });
+
     if (!otpRes.ok) {
+      // Don't swallow this — the account exists either way, but the person
+      // needs to know the first code didn't go out so they hit Resend
+      // instead of waiting on an email that's never coming.
       const data = await otpRes.json().catch(() => ({}));
-      setError(data.error ?? "Account created, but the code couldn't be sent. Try resending from the next screen.");
+      query.set("sendFailed", "1");
+      query.set("sendError", data.error ?? "Could not send the code.");
     }
 
-    router.push(
-      `/auth/verify?email=${encodeURIComponent(email)}&userId=${userId ?? ""}`
-    );
+    router.push(`/auth/verify?${query.toString()}`);
   }
 
   return (
