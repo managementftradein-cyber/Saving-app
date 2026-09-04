@@ -26,8 +26,15 @@ export async function POST(request: NextRequest) {
 
   // If this was a signup-email verification, also flip the confirmation
   // flag on the underlying Supabase Auth user so they can sign in normally.
+  // This is a secondary, cosmetic step — the flag that actually gates
+  // access (profiles.email_verified) was already set inside verify_otp()
+  // above, so a failure here should never undo a real verification.
   if (purpose === "signup" && data.user_id) {
-    await admin.auth.admin.updateUserById(data.user_id, { email_confirm: true });
+    try {
+      await admin.auth.admin.updateUserById(data.user_id, { email_confirm: true });
+    } catch (confirmError) {
+      console.error("updateUserById (non-fatal) failed:", confirmError);
+    }
   }
 
   return NextResponse.json({ success: true, userId: data.user_id });

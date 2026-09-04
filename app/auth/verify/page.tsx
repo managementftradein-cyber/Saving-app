@@ -22,21 +22,27 @@ function VerifyForm() {
     setError(null);
     setLoading(true);
 
-    const res = await fetch("/api/otp/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ destination: email, purpose: "signup", code }),
-    });
-    const data = await res.json();
-    setLoading(false);
+    try {
+      const res = await fetch("/api/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destination: email, purpose: "signup", code }),
+      });
 
-    if (!res.ok) {
-      setError(data.error ?? "That code didn't work — check it and try again.");
-      return;
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error ?? `Verification failed (${res.status}). Try again.`);
+        return;
+      }
+
+      router.push("/onboarding/profile");
+      router.refresh();
+    } catch {
+      setError("Something went wrong reaching the server. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/onboarding/profile");
-    router.refresh();
   }
 
   async function handleResend() {
@@ -44,19 +50,24 @@ function VerifyForm() {
     setResent(false);
     setResending(true);
 
-    const res = await fetch("/api/otp/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel: "email", destination: email, purpose: "signup", userId }),
-    });
-    const data = await res.json();
-    setResending(false);
+    try {
+      const res = await fetch("/api/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel: "email", destination: email, purpose: "signup", userId }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      setError(data.error ?? "Could not resend code.");
-      return;
+      if (!res.ok) {
+        setError(data.error ?? `Could not resend code (${res.status}).`);
+        return;
+      }
+      setResent(true);
+    } catch {
+      setError("Something went wrong reaching the server. Try again.");
+    } finally {
+      setResending(false);
     }
-    setResent(true);
   }
 
   return (
