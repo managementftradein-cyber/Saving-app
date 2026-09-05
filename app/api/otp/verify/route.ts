@@ -40,12 +40,54 @@ export async function POST(request: NextRequest) {
   // access (profiles.email_verified) was already set inside verify_otp()
   // above, so a failure here should never undo a real verification.
   if (purpose === "signup" && data.user_id) {
+    // Make the verification state durable even if the auth-user profile
+    // trigger was delayed, disabled, or missing when the account was created.
+    // This is deliberately an upsert: the middleware gates protected routes
+    // on this row, so a successful OTP must always leave a verified profile.
+    const { error: profileError } = await admin
+      .from("profiles")
+      .upsert(
+        { id: data.user_id, email_verified: true },
+        { onConflict: "id" }
+      );
+
+    if (profileError) {
+      console.error("profile verification upsert failed:", profileError);
+      return NextResponse.json(
+        { error: "Your code was valid, but we could not finish activating your account. Please try again." },
+        { status: 500 }
+      );
+    }
+
     try {
-      await admin.auth.admin.updateUserById(data.user_id, { email_confirm: true });
+      const { error: confirmError } = await admin.auth.admin.updateUserById(
+        data.user_id,
+        { email_confirm: true }
+      );
+      if (confirmError) console.error("updateUserById (non-fatal) failed:", confirmError);
     } catch (confirmError) {
       console.error("updateUserById (non-fatal) failed:", confirmError);
     }
   }
 
-  return NextResponse.json({ success: true });
+  // Confirm the exact state the middleware will read before telling the
+  // browser to leave the verification page. This prevents a successful OTP
+  // from being followed by an immediate middleware redirect back to /auth/verify.
+  if (purpose === "signup" && data.user_id) {
+    const { data: verifiedProfile, error: verifyProfileError } = await admin
+      .from("profiles")
+      .select("email_verified")
+      .eq("id", data.user_id)
+      .maybeSingle();
+
+    if (verifyProfileError || !verifiedProfile?.email_verified) {
+      console.error("verification state could not be confirmed:", verifyProfileError);
+      return NextResponse.json(
+        { error: "Verification succeeded, but your account is not ready yet. Please try again." },
+        { status: 500 }
+      );
+    }
+  }
+
+  return NextResponse.json({ success: true, redirectTo: "/onboarding/profile" });
 }

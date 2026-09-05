@@ -130,10 +130,20 @@ begin
 
   update public.otp_codes set consumed_at = now() where id = v_row.id;
 
+  -- The profile is normally created by the auth.users trigger, but OTP
+  -- verification must not depend on that trigger having already completed.
+  -- Upsert guarantees that a successful verification always leaves the
+  -- profile row in the state expected by middleware.
   if v_row.channel = 'email' then
-    update public.profiles set email_verified = true where id = v_row.user_id;
+    insert into public.profiles (id, email_verified)
+    values (v_row.user_id, true)
+    on conflict (id) do update
+      set email_verified = true;
   elsif v_row.channel = 'phone' then
-    update public.profiles set phone_verified = true where id = v_row.user_id;
+    insert into public.profiles (id, phone_verified)
+    values (v_row.user_id, true)
+    on conflict (id) do update
+      set phone_verified = true;
   end if;
 
   return query select true, v_row.user_id, 'Verified.';

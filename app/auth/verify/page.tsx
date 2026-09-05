@@ -33,7 +33,7 @@ function VerifyForm() {
         return;
       }
 
-      window.location.assign("/onboarding/profile");
+      window.location.replace(data.redirectTo ?? "/onboarding/profile");
     } catch (err) {
       setError("Something went wrong reaching the server. Check your connection and try again.");
     } finally {
