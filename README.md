@@ -116,3 +116,11 @@ no-op since crediting is idempotent.
 - **Notifications** — deposit/withdrawal alerts, savings reminders.
 
 Say the word and we'll build the next one the same way.
+
+## Required Supabase privilege migration
+
+If a server-side onboarding/profile request reports `42501 permission denied for table profiles` while the database says the current role is `service_role`, run:
+
+`supabase/migration_service_role_profiles_grants.sql`
+
+This grants the trusted `service_role` the minimum `profiles` table privileges required by the server-side onboarding route. It does not grant browser users direct write access and does not disable RLS.
