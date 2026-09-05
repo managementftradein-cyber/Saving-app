@@ -34,7 +34,8 @@ export async function createClient() {
         // Same fix as middleware.ts — prevents Next.js's fetch cache from
         // silently serving stale reads on tables that change frequently
         // (profiles.email_verified, wallets.balance_kobo, etc).
-        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: "no-store" }),
       },
     }
   );

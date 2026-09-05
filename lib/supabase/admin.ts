@@ -13,7 +13,8 @@ export function createAdminClient() {
     {
       auth: { persistSession: false, autoRefreshToken: false },
       global: {
-        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: "no-store" }),
       },
     }
   );

@@ -32,7 +32,8 @@ export async function middleware(request: NextRequest) {
         // Supabase's client uses fetch() internally for every query,
         // including this one — without this, a profiles lookup right after
         // an update can silently return a stale cached result.
-        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: "no-store" }),
       },
     }
   );
