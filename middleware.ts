@@ -27,6 +27,13 @@ export async function middleware(request: NextRequest) {
           );
         },
       },
+      global: {
+        // Next.js patches the global fetch() to cache responses by default.
+        // Supabase's client uses fetch() internally for every query,
+        // including this one — without this, a profiles lookup right after
+        // an update can silently return a stale cached result.
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      },
     }
   );
 
@@ -49,11 +56,15 @@ export async function middleware(request: NextRequest) {
   // has actually confirmed their email via our own OTP flow. Check the
   // profile flag before letting them past onboarding/dashboard.
   if (isProtected && user) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("email_verified")
       .eq("id", user.id)
       .single();
+
+    if (profileError) {
+      console.error("middleware profile lookup failed:", profileError.message);
+    }
 
     if (!profile?.email_verified) {
       const redirectUrl = new URL("/auth/verify", request.url);
