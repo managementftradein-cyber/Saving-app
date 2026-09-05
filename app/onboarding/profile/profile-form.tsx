@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ProfileForm() {
+  const router = useRouter();
   const supabase = createClient();
 
   const [phone, setPhone] = useState("");
@@ -27,13 +29,17 @@ export default function ProfileForm() {
     }
 
     setPhoneLoading(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     const res = await fetch("/api/otp/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         channel: "phone",
         destination: phone,
-        purpose: "phone_change",
+        purpose: "phone_verify",
       }),
     });
     const data = await res.json();
@@ -53,7 +59,7 @@ export default function ProfileForm() {
     const res = await fetch("/api/otp/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ destination: phone, purpose: "phone_change", code: phoneCode }),
+      body: JSON.stringify({ destination: phone, purpose: "phone_verify", code: phoneCode }),
     });
     const data = await res.json();
     setPhoneLoading(false);
@@ -69,33 +75,30 @@ export default function ProfileForm() {
     setError(null);
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const res = await fetch("/api/onboarding/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone,
+          dateOfBirth: dob,
+          startKyc,
+          phoneVerified: phoneStage === "verified" || !phone,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-    if (!user) {
+      if (!res.ok) {
+        setError(data.error ?? "We could not save your profile. Please try again.");
+        return;
+      }
+
+      window.location.assign("/dashboard");
+    } catch {
+      setError("Something went wrong saving your profile. Please try again.");
+    } finally {
       setLoading(false);
-      window.location.replace("/auth/login");
-      return;
     }
-
-    const res = await fetch("/api/onboarding/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone,
-        dateOfBirth: dob,
-        startKyc,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data.error ?? "We couldn't save your profile. Please try again.");
-      return;
-    }
-
-    window.location.replace("/dashboard");
   }
 
   function handleSubmit(e: FormEvent) {

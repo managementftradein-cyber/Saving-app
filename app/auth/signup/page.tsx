@@ -25,7 +25,7 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -36,12 +36,6 @@ export default function SignupPage() {
     if (signUpError) {
       setLoading(false);
       setError(signUpError.message);
-      return;
-    }
-
-    if (!signUpData.user) {
-      setLoading(false);
-      setError("Account creation did not return a user. Please try again.");
       return;
     }
 

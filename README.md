@@ -116,13 +116,3 @@ no-op since crediting is idempotent.
 - **Notifications** — deposit/withdrawal alerts, savings reminders.
 
 Say the word and we'll build the next one the same way.
-
-## Authentication flow hardening
-
-The signup flow uses a custom OTP and therefore expects Supabase Authentication > Email > Confirm email to be disabled. The browser must receive an active Supabase session immediately after signUp().
-
-Run `supabase/migration_auth_onboarding_hardening.sql` after the existing schema files. The protected flow is:
-
-Signup -> active session -> email OTP -> verified profile -> onboarding -> dashboard.
-
-The OTP UI intentionally does not display API response/debug data. Protected navigation uses full browser navigation after verification/onboarding so middleware evaluates the latest auth/profile state.

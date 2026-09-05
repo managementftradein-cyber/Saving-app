@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type FormEvent, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
@@ -35,7 +36,7 @@ function LoginForm() {
       return;
     }
 
-    window.location.replace(searchParams.get("next") ?? "/dashboard");
+    router.push(searchParams.get("next") ?? "/dashboard");
   }
 
   return (

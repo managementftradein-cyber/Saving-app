@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Routes that require a signed-in, verified user.
 const PROTECTED_PREFIXES = ["/dashboard", "/onboarding"];
 
 export async function middleware(request: NextRequest) {
@@ -11,58 +12,67 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(
+          cookiesToSet: { name: string; value: string; options?: CookieOptions }[]
+        ) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
       global: {
-        fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: "no-store" }),
+        // Next.js patches the global fetch() to cache responses by default.
+        // Supabase's client uses fetch() internally for every query,
+        // including this one — without this, a profiles lookup right after
+        // an update can silently return a stale cached result.
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: "no-store" }),
       },
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const pathname = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!isProtected) return response;
+  const isProtected = PROTECTED_PREFIXES.some((p) =>
+    request.nextUrl.pathname.startsWith(p)
+  );
 
-  if (!user) {
+  if (isProtected && !user) {
     const redirectUrl = new URL("/auth/login", request.url);
-    redirectUrl.searchParams.set("next", pathname);
+    redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("email_verified, onboarding_completed_at")
-    .eq("id", user.id)
-    .maybeSingle();
+  // With Supabase's own "Confirm email" turned off, signUp() returns an
+  // active session immediately — so a session alone doesn't mean the user
+  // has actually confirmed their email via our own OTP flow. Check the
+  // profile flag before letting them past onboarding/dashboard.
+  if (isProtected && user) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("email_verified")
+      .eq("id", user.id)
+      .single();
 
-  // email_confirmed_at is a safe fallback because our OTP verification also
-  // confirms the underlying Supabase Auth email. It prevents a trigger/profile
-  // race from trapping an already verified user on the verification page.
-  const verified = profile
-    ? profile.email_verified === true
-    : Boolean(user.email_confirmed_at);
+    if (profileError) {
+      console.error("middleware profile lookup failed:", profileError.message);
+    }
 
-  if (!verified) {
-    const redirectUrl = new URL("/auth/verify", request.url);
-    if (user.email) redirectUrl.searchParams.set("email", user.email);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  const onboardingComplete = Boolean(profile?.onboarding_completed_at);
-
-  if (pathname.startsWith("/onboarding") && onboardingComplete) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  if (pathname.startsWith("/dashboard") && !onboardingComplete) {
-    return NextResponse.redirect(new URL("/onboarding/profile", request.url));
+    if (!profile?.email_verified) {
+      const redirectUrl = new URL("/auth/verify", request.url);
+      redirectUrl.searchParams.set("email", user.email ?? "");
+      redirectUrl.searchParams.set("userId", user.id);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return response;
