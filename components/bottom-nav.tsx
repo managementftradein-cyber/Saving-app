@@ -23,19 +23,6 @@ export default function BottomNav() {
               ? pathname === "/dashboard"
               : pathname.startsWith(tab.href);
 
-          if (tab.disabled) {
-            return (
-              <span
-                key={tab.key}
-                title="Coming soon"
-                className="flex flex-col items-center gap-1 text-[10.5px] font-semibold text-ink-soft/40 cursor-not-allowed"
-              >
-                <span className="w-5 h-5 rounded-full border-2 border-current" />
-                {tab.label}
-              </span>
-            );
-          }
-
           return (
             <Link
               key={tab.key}
