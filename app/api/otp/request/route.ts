@@ -27,9 +27,31 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient();
+
+  // Never trust a userId supplied by the browser for signup OTPs. Resolve
+  // the Auth user from the destination instead; otherwise someone could
+  // combine their own email with another user's UUID and mark that user's
+  // profile as verified.
+  let resolvedUserId = userId;
+  if (purpose === "signup") {
+    if (channel === "email") {
+      const { data: authUser, error: lookupError } = await admin.auth.admin.getUserByEmail(destination);
+      if (lookupError || !authUser.user) {
+        return NextResponse.json({ error: "Account not found for this email." }, { status: 404 });
+      }
+      resolvedUserId = authUser.user.id;
+    } else {
+      const { data: authUser, error: lookupError } = await admin.auth.admin.getUserByPhone(destination);
+      if (lookupError || !authUser.user) {
+        return NextResponse.json({ error: "Account not found for this phone number." }, { status: 404 });
+      }
+      resolvedUserId = authUser.user.id;
+    }
+  }
+
   const { data, error } = await admin
     .rpc("request_otp", {
-      p_user_id: userId,
+      p_user_id: resolvedUserId,
       p_channel: channel,
       p_destination: destination,
       p_purpose: purpose,

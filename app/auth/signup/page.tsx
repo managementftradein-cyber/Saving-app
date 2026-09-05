@@ -25,7 +25,7 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -39,8 +39,6 @@ export default function SignupPage() {
       return;
     }
 
-    const userId = signUpData.user?.id;
-
     // Request our own OTP (sent via Resend) rather than relying on
     // Supabase's built-in confirmation email — this project's Supabase
     // project must have "Confirm email" turned OFF so signUp() returns an
@@ -53,16 +51,12 @@ export default function SignupPage() {
         channel: "email",
         destination: email,
         purpose: "signup",
-        userId,
       }),
     });
 
     setLoading(false);
 
-    const query = new URLSearchParams({
-      email,
-      userId: userId ?? "",
-    });
+    const query = new URLSearchParams({ email });
 
     if (!otpRes.ok) {
       // Don't swallow this — the account exists either way, but the person
