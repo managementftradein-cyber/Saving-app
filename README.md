@@ -106,6 +106,19 @@ later, remember to also `grant select` (and `insert`/`update` as needed) to
 `authenticated` — see `supabase/migration_grant_authenticated_privileges.sql`
 for the pattern.
 
+## A security fix you must run if you set this up before the Profile feature
+
+**Run `supabase/migration_restrict_profile_column_updates.sql` now if you
+haven't already.** The original grant on `profiles` gave `authenticated`
+`UPDATE` on the whole table, which — unlike an RLS policy — silently
+covers every column added later too, including `role`, `kyc_status`,
+`email_verified`, and `phone_verified`. Until this migration is run, any
+logged-in user could open the browser console and run
+`supabase.from('profiles').update({ role: 'admin' })` on their own row and
+grant themselves admin access, or fake their own KYC/verification status.
+This is folded into `schema.sql` for fresh installs, but an
+already-running project needs the migration applied by hand.
+
 ## How verification works now
 
 Sign up → account is created (session starts immediately since Supabase's

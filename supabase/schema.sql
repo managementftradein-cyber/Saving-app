@@ -76,7 +76,16 @@ create policy "Users can update their own profile"
 -- RLS policies alone aren't enough; the role also needs table-level
 -- privileges or Postgres rejects the query before RLS is even evaluated.
 grant usage on schema public to authenticated, anon;
-grant select, update on table public.profiles to authenticated;
+-- SELECT is fine at the table level — RLS already restricts it to the
+-- caller's own row. UPDATE is intentionally column-restricted: a
+-- table-wide grant here would apply to every column added later too
+-- (role, kyc_status, email_verified, phone_verified), letting a user
+-- update those on themselves directly — e.g. granting themselves admin.
+-- Only these fields are ever safe for a user to change about themselves;
+-- everything else changes only through security-definer functions or
+-- service-role API routes.
+grant select on table public.profiles to authenticated;
+grant update (full_name, phone, date_of_birth, avatar_url) on table public.profiles to authenticated;
 
 -- 5. Helpful index --------------------------------------------------------
 create index if not exists profiles_kyc_status_idx on public.profiles (kyc_status);

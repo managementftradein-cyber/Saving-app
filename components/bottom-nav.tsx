@@ -8,7 +8,7 @@ const TABS = [
   { href: "/dashboard/savings", label: "Savings", key: "savings" },
   { href: "/dashboard/wallet", label: "Wallet", key: "wallet" },
   { href: "/dashboard/community", label: "Community", key: "community" },
-  { href: "#", label: "Profile", key: "profile", disabled: true },
+  { href: "/dashboard/profile", label: "Profile", key: "profile" },
 ];
 
 export default function BottomNav() {
