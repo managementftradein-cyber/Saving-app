@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client";
 
-export default function ProfileForm({ initialPhone = "", initialDob = "" }: { initialPhone?: string; initialDob?: string }) {
-  const router = useRouter();
+export default function ProfileForm() {
   const supabase = createClient();
 
-  const [phone, setPhone] = useState(initialPhone);
-  const [dob, setDob] = useState(initialDob);
+  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +34,7 @@ export default function ProfileForm({ initialPhone = "", initialDob = "" }: { in
         channel: "phone",
         destination: phone,
         purpose: "phone_change",
-              }),
+      }),
     });
     const data = await res.json();
     setPhoneLoading(false);
@@ -71,30 +69,33 @@ export default function ProfileForm({ initialPhone = "", initialDob = "" }: { in
     setError(null);
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       setLoading(false);
-      router.push("/auth/login");
+      window.location.replace("/auth/login");
       return;
     }
 
-    const { error: updateError } = await supabase.rpc("complete_onboarding", {
-      p_phone: phone || null,
-      p_date_of_birth: dob || null,
-      p_start_kyc: startKyc,
+    const res = await fetch("/api/onboarding/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone,
+        dateOfBirth: dob,
+        startKyc,
+      }),
     });
+    const data = await res.json().catch(() => ({}));
 
     setLoading(false);
 
-    if (updateError) {
-      setError("We could not save your profile. Please try again.");
+    if (!res.ok) {
+      setError(data.error ?? "We couldn't save your profile. Please try again.");
       return;
     }
 
-    window.location.assign("/dashboard");
+    window.location.replace("/dashboard");
   }
 
   function handleSubmit(e: FormEvent) {

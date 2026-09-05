@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, Suspense } from "react";
-import { useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -35,7 +35,7 @@ function LoginForm() {
       return;
     }
 
-    window.location.assign(searchParams.get("next") ?? "/dashboard");
+    window.location.replace(searchParams.get("next") ?? "/dashboard");
   }
 
   return (

@@ -11,15 +11,13 @@ function VerifyForm() {
   const initialSendError = searchParams.get("sendError");
 
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(initialSendFailed ? initialSendError ?? "The verification code could not be sent. Please resend it." : null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resent, setResent] = useState(false);
   const [resending, setResending] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (code.length !== 6) return;
-
     setError(null);
     setResent(false);
     setLoading(true);
@@ -30,17 +28,16 @@ function VerifyForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ destination: email, purpose: "signup", code }),
       });
-
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "That code could not be verified. Try again.");
+        setError(data.error ?? "Verification failed. Please try again.");
         return;
       }
 
-      // Force a fresh request so the new profile verification state and
-      // Supabase session cookies are definitely observed by middleware.
-      window.location.assign("/onboarding/profile");
+      // Use a full navigation so the browser sends the refreshed auth
+      // cookies through middleware before rendering the next protected page.
+      window.location.replace("/onboarding/profile");
     } catch {
       setError("Something went wrong reaching the server. Check your connection and try again.");
     } finally {
@@ -62,11 +59,9 @@ function VerifyForm() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Could not resend the verification code.");
+        setError(data.error ?? "Could not resend the code.");
         return;
       }
-
-      setCode("");
       setResent(true);
     } catch {
       setError("Something went wrong reaching the server. Try again.");
@@ -89,11 +84,12 @@ function VerifyForm() {
         <span className="font-semibold text-ink">{email || "your email"}</span>.
       </p>
 
-      {error && (
-        <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>
-      )}
-      {resent && !error && (
-        <p className="mt-4 text-sm text-success">Code resent — check your inbox.</p>
+      {initialSendFailed && (
+        <div className="mt-4 rounded-xl bg-[#FCECEB] border border-[#F3C6C1] p-3">
+          <p className="text-sm font-semibold text-[#C5453A]">The first code couldn&apos;t be sent.</p>
+          {initialSendError && <p className="text-xs text-[#C5453A]/80 mt-1">{initialSendError}</p>}
+          <p className="text-xs text-[#C5453A]/80 mt-1">Tap &quot;Resend code&quot; below to try again.</p>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
@@ -104,13 +100,15 @@ function VerifyForm() {
           pattern="[0-9]*"
           maxLength={6}
           required
-          autoFocus
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           className="input-field text-center text-lg tracking-[0.5em] font-semibold"
           placeholder="000000"
           aria-label="6-digit verification code"
         />
+
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {resent && !error && <p className="text-sm text-success">Code resent — check your inbox.</p>}
 
         <button type="submit" disabled={loading || code.length !== 6} className="btn-primary mt-2">
           {loading ? "Verifying…" : "Verify"}
@@ -125,9 +123,5 @@ function VerifyForm() {
 }
 
 export default function VerifyPage() {
-  return (
-    <Suspense fallback={null}>
-      <VerifyForm />
-    </Suspense>
-  );
+  return <Suspense fallback={null}><VerifyForm /></Suspense>;
 }
