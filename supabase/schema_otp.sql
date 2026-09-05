@@ -130,6 +130,15 @@ begin
 
   update public.otp_codes set consumed_at = now() where id = v_row.id;
 
+  -- The Auth user is the source of truth. Make the profile row idempotently
+  -- available before changing verification state so a trigger race or a
+  -- legacy account can never produce a successful OTP with no profile row.
+  insert into public.profiles (id, full_name, phone)
+  select u.id, u.raw_user_meta_data ->> 'full_name', u.phone
+  from auth.users u
+  where u.id = v_row.user_id
+  on conflict (id) do nothing;
+
   if v_row.channel = 'email' then
     update public.profiles set email_verified = true where id = v_row.user_id;
   elsif v_row.channel = 'phone' then

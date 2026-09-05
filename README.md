@@ -56,7 +56,8 @@ privileges) can.
 
 1. **Run the schema, in order.** In Supabase → SQL Editor:
    `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
-   `supabase/schema_otp.sql`.
+   `supabase/schema_otp.sql` → `supabase/migration_otp_reference_auth_users.sql` →
+   `supabase/migration_onboarding_hardening.sql`.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by

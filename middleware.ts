@@ -70,7 +70,6 @@ export async function middleware(request: NextRequest) {
     if (!profile?.email_verified) {
       const redirectUrl = new URL("/auth/verify", request.url);
       redirectUrl.searchParams.set("email", user.email ?? "");
-      redirectUrl.searchParams.set("userId", user.id);
       return NextResponse.redirect(redirectUrl);
     }
   }

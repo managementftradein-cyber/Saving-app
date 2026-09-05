@@ -8,9 +8,21 @@ export default async function OnboardingProfilePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/auth/login");
+  if (!user) redirect("/auth/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, phone, date_of_birth, onboarding_completed_at, email_verified")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.email_verified) {
+    redirect(`/auth/verify?email=${encodeURIComponent(user.email ?? "")}`);
   }
 
-  return <ProfileForm />;
+  if (profile.onboarding_completed_at) {
+    redirect("/dashboard");
+  }
+
+  return <ProfileForm initialPhone={profile.phone ?? ""} initialDob={profile.date_of_birth ?? ""} />;
 }

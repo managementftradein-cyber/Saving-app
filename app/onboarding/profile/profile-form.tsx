@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client";
 
-export default function ProfileForm() {
+export default function ProfileForm({ initialPhone = "", initialDob = "" }: { initialPhone?: string; initialDob?: string }) {
   const router = useRouter();
   const supabase = createClient();
 
-  const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState("");
+  const [phone, setPhone] = useState(initialPhone);
+  const [dob, setDob] = useState(initialDob);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,19 +29,14 @@ export default function ProfileForm() {
     }
 
     setPhoneLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     const res = await fetch("/api/otp/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         channel: "phone",
         destination: phone,
-        purpose: "signup",
-        userId: user?.id,
-      }),
+        purpose: "phone_change",
+              }),
     });
     const data = await res.json();
     setPhoneLoading(false);
@@ -60,7 +55,7 @@ export default function ProfileForm() {
     const res = await fetch("/api/otp/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ destination: phone, purpose: "signup", code: phoneCode }),
+      body: JSON.stringify({ destination: phone, purpose: "phone_change", code: phoneCode }),
     });
     const data = await res.json();
     setPhoneLoading(false);
@@ -86,24 +81,20 @@ export default function ProfileForm() {
       return;
     }
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        phone: phone || null,
-        date_of_birth: dob || null,
-        kyc_status: startKyc ? "pending" : "not_started",
-        onboarding_completed_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+    const { error: updateError } = await supabase.rpc("complete_onboarding", {
+      p_phone: phone || null,
+      p_date_of_birth: dob || null,
+      p_start_kyc: startKyc,
+    });
 
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError("We could not save your profile. Please try again.");
       return;
     }
 
-    router.push("/dashboard");
+    window.location.assign("/dashboard");
   }
 
   function handleSubmit(e: FormEvent) {
