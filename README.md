@@ -56,10 +56,10 @@ privileges) can.
 
 1. **Run the schema, in order.** In Supabase → SQL Editor:
    `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
-   `supabase/schema_otp.sql` → `supabase/schema_community.sql`. These now
-   include the `GRANT` statements a fresh project needs — see the note
-   below if you're patching an already-running project instead of starting
-   clean.
+   `supabase/schema_otp.sql` → `supabase/schema_community.sql` →
+   `supabase/schema_admin.sql`. These now include the `GRANT` statements a
+   fresh project needs — see the note below if you're patching an
+   already-running project instead of starting clean.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by
@@ -148,12 +148,42 @@ app/api/community/
   groups/[groupId]/join   Toggle group membership
 ```
 
+## What the admin panel adds
+
+`supabase/schema_admin.sql` — adds a `role` column to `profiles`
+(`'user'` or `'admin'`), settable **only** via a manual `UPDATE` in the SQL
+editor — there's no signup flow, API route, or UI button that can ever
+grant it. Admin routes check the caller's own role via their normal
+session (`lib/admin-auth.ts`), then do the actual privileged read/write
+through the service-role client — rather than adding RLS policies that
+would let any authenticated session query everyone's rows directly.
+
+```
+app/admin/
+  page.tsx               Overview — user counts, KYC queue, totals under management
+  users/                 Full user list, filterable by pending KYC
+  users/[userId]/         Profile detail + approve/reject KYC
+  community/              Moderation — delete any post
+app/api/admin/
+  users/[userId]/kyc/     Approve/reject a user's KYC
+  community/posts/[id]/   Admin delete for any post
+lib/admin-auth.ts          Shared requireAdminUser() check
+```
+
+**To make yourself an admin**, after running `schema_admin.sql`, run in the
+SQL editor:
+```sql
+update public.profiles set role = 'admin' where id = '<your-user-uuid>';
+```
+Find your ID with the query in the comments at the bottom of that file.
+Then visit `/admin` — ordinary users get redirected straight back to
+`/dashboard` if they try.
+
 ## Next slices
 
-- **Admin panel** — user management, KYC approval queue, analytics.
 - **Notifications** — deposit/withdrawal alerts, savings reminders.
 
-Say the word and we'll build the next one the same way.
+Say the word and we'll build it the same way.
 
 ## Required Supabase privilege migration
 

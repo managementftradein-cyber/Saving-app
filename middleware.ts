@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Routes that require a signed-in, verified user.
 const PROTECTED_PREFIXES = ["/dashboard", "/onboarding"];
+// Routes that additionally require role = 'admin'.
+const ADMIN_PREFIXES = ["/admin"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -45,8 +47,11 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
+  const isAdminRoute = ADMIN_PREFIXES.some((p) =>
+    request.nextUrl.pathname.startsWith(p)
+  );
 
-  if (isProtected && !user) {
+  if ((isProtected || isAdminRoute) && !user) {
     const redirectUrl = new URL("/auth/login", request.url);
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
@@ -55,11 +60,11 @@ export async function middleware(request: NextRequest) {
   // With Supabase's own "Confirm email" turned off, signUp() returns an
   // active session immediately — so a session alone doesn't mean the user
   // has actually confirmed their email via our own OTP flow. Check the
-  // profile flag before letting them past onboarding/dashboard.
-  if (isProtected && user) {
+  // profile flag before letting them past onboarding/dashboard/admin.
+  if ((isProtected || isAdminRoute) && user) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("email_verified")
+      .select("email_verified, role")
       .eq("id", user.id)
       .single();
 
@@ -72,6 +77,13 @@ export async function middleware(request: NextRequest) {
       redirectUrl.searchParams.set("email", user.email ?? "");
       redirectUrl.searchParams.set("userId", user.id);
       return NextResponse.redirect(redirectUrl);
+    }
+
+    // Admin routes need the role check too — a verified but ordinary user
+    // gets bounced to their own dashboard, not shown an admin-specific error
+    // page that would confirm the route even exists.
+    if (isAdminRoute && profile.role !== "admin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
