@@ -44,6 +44,21 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // IMPORTANT: getUser() can refresh the session and attach the new
+  // cookies onto `response` (via the setAll callback above). A bare
+  // NextResponse.redirect(url) creates a brand-new response object that
+  // does NOT carry those cookies — if a refresh just happened, the browser
+  // is left holding a now-stale/rotated token, breaking the session
+  // entirely on the very next request. Every redirect below must copy
+  // `response`'s cookies onto itself.
+  function redirect(url: URL) {
+    const redirectResponse = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
+  }
+
   const isProtected = PROTECTED_PREFIXES.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
@@ -54,7 +69,7 @@ export async function middleware(request: NextRequest) {
   if ((isProtected || isAdminRoute) && !user) {
     const redirectUrl = new URL("/auth/login", request.url);
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    return redirect(redirectUrl);
   }
 
   // With Supabase's own "Confirm email" turned off, signUp() returns an
@@ -76,14 +91,14 @@ export async function middleware(request: NextRequest) {
       const redirectUrl = new URL("/auth/verify", request.url);
       redirectUrl.searchParams.set("email", user.email ?? "");
       redirectUrl.searchParams.set("userId", user.id);
-      return NextResponse.redirect(redirectUrl);
+      return redirect(redirectUrl);
     }
 
     // Admin routes need the role check too — a verified but ordinary user
     // gets bounced to their own dashboard, not shown an admin-specific error
     // page that would confirm the route even exists.
     if (isAdminRoute && profile.role !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return redirect(new URL("/dashboard", request.url));
     }
   }
 
