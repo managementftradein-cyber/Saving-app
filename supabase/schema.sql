@@ -71,5 +71,12 @@ create policy "Users can update their own profile"
 -- Profiles are only ever inserted by the handle_new_user trigger (security definer),
 -- so no insert policy is granted to regular users.
 
+-- Tables created via the SQL Editor (as opposed to the dashboard Table
+-- Editor) don't automatically receive base GRANTs for authenticated/anon —
+-- RLS policies alone aren't enough; the role also needs table-level
+-- privileges or Postgres rejects the query before RLS is even evaluated.
+grant usage on schema public to authenticated, anon;
+grant select, update on table public.profiles to authenticated;
+
 -- 5. Helpful index --------------------------------------------------------
 create index if not exists profiles_kyc_status_idx on public.profiles (kyc_status);

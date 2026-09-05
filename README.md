@@ -56,7 +56,10 @@ privileges) can.
 
 1. **Run the schema, in order.** In Supabase → SQL Editor:
    `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
-   `supabase/schema_otp.sql`.
+   `supabase/schema_otp.sql` → `supabase/schema_community.sql`. These now
+   include the `GRANT` statements a fresh project needs — see the note
+   below if you're patching an already-running project instead of starting
+   clean.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by
@@ -91,6 +94,18 @@ privileges) can.
 7. **Deploy.** Push to GitHub, Vercel picks it up from the repo root. Add
    all env vars in Vercel → Settings → Environment Variables.
 
+## A gotcha worth knowing about
+
+Tables created by running raw SQL in the Supabase SQL Editor do **not**
+automatically get the table-level `GRANT`s that tables created through the
+dashboard's Table Editor receive. RLS policies only control *which rows* a
+role can see — the role still needs a base `GRANT` to touch the table at
+all. Without it, Postgres rejects every query with `permission denied for
+table X`, before RLS is ever evaluated. If you add a new table by hand
+later, remember to also `grant select` (and `insert`/`update` as needed) to
+`authenticated` — see `supabase/migration_grant_authenticated_privileges.sql`
+for the pattern.
+
 ## How verification works now
 
 Sign up → account is created (session starts immediately since Supabase's
@@ -109,9 +124,32 @@ any CVV, OTP `123456`. After checkout you'll land on
 your wallet immediately — the webhook then fires separately and is a safe
 no-op since crediting is idempotent.
 
+## What community forum adds
+
+`supabase/schema_community.sql` — posts, comments, likes, groups, and a
+weekly savings leaderboard view. Like/comment counts are kept accurate by
+database triggers rather than app-level increments, so two people liking
+the same post at once can't corrupt the count. RLS lets any signed-in user
+read everything, but only the author of a post/comment can delete it, and
+only the security-definer triggers can touch the like/comment counters —
+matching the same pattern used everywhere else in this project.
+
+```
+app/dashboard/community/
+  page.tsx              Feed — posts, group chips, weekly leaderboard
+  new/                  Create a post, optionally to a group
+  [postId]/             Post detail with comments
+  group-chips.tsx        Join/leave a community group
+  like-button.tsx         Optimistic like toggle
+app/api/community/
+  posts/                 Create a post
+  posts/[postId]/like     Toggle a like
+  posts/[postId]/comments Add a comment
+  groups/[groupId]/join   Toggle group membership
+```
+
 ## Next slices
 
-- **Community forum** — posts, comments, likes, leaderboard.
 - **Admin panel** — user management, KYC approval queue, analytics.
 - **Notifications** — deposit/withdrawal alerts, savings reminders.
 

@@ -235,3 +235,12 @@ revoke execute on function public.credit_wallet(uuid, bigint, text, text) from a
 
 grant execute on function public.transfer_to_goal(uuid, bigint) to authenticated;
 grant execute on function public.withdraw_from_goal(uuid, bigint) to authenticated;
+
+-- 9. Base table grants -------------------------------------------------------
+-- Same gotcha as profiles: tables created via the SQL Editor don't
+-- automatically get GRANTs for authenticated/anon the way dashboard-created
+-- tables do. Without these, Postgres rejects the query with "permission
+-- denied" before RLS is ever evaluated.
+grant select on table public.wallets to authenticated;
+grant select, insert on table public.savings_goals to authenticated;
+grant select on table public.wallet_transactions to authenticated;

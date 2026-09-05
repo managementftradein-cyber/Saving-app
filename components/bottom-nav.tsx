@@ -7,7 +7,7 @@ const TABS = [
   { href: "/dashboard", label: "Home", key: "home" },
   { href: "/dashboard/savings", label: "Savings", key: "savings" },
   { href: "/dashboard/wallet", label: "Wallet", key: "wallet" },
-  { href: "#", label: "Community", key: "community", disabled: true },
+  { href: "/dashboard/community", label: "Community", key: "community" },
   { href: "#", label: "Profile", key: "profile", disabled: true },
 ];
 

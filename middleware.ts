@@ -71,11 +71,6 @@ export async function middleware(request: NextRequest) {
       const redirectUrl = new URL("/auth/verify", request.url);
       redirectUrl.searchParams.set("email", user.email ?? "");
       redirectUrl.searchParams.set("userId", user.id);
-      // Temporary diagnostics — safe to remove once this is resolved.
-      // Shows exactly what the middleware saw, directly in the URL.
-      redirectUrl.searchParams.set("_dbgUserId", user.id);
-      redirectUrl.searchParams.set("_dbgProfile", JSON.stringify(profile ?? null));
-      redirectUrl.searchParams.set("_dbgErr", profileError?.message ?? "none");
       return NextResponse.redirect(redirectUrl);
     }
   }
