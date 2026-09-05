@@ -7,6 +7,7 @@ function VerifyForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
+  const userId = searchParams.get("userId") ?? "";
   const initialSendFailed = searchParams.get("sendFailed") === "1";
   const initialSendError = searchParams.get("sendError");
 
@@ -38,9 +39,8 @@ function VerifyForm() {
         return;
       }
 
-      // Use a full navigation after verification so the newly-updated
-      // profile/auth state is read by middleware immediately.
-      window.location.assign("/onboarding/profile");
+      router.push("/onboarding/profile");
+      router.refresh();
     } catch (err) {
       setDebug(`Network/JS error: ${err instanceof Error ? err.message : String(err)}`);
       setError("Something went wrong reaching the server. Check your connection and try again.");
@@ -58,7 +58,7 @@ function VerifyForm() {
       const res = await fetch("/api/otp/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ channel: "email", destination: email, purpose: "signup" }),
+        body: JSON.stringify({ channel: "email", destination: email, purpose: "signup", userId }),
       });
       const data = await res.json().catch(() => ({}));
 

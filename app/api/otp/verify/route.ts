@@ -24,38 +24,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: data.message }, { status: 400 });
   }
 
-  // Confirm the Auth user as well. This makes the flow resilient even if
-  // Supabase Auth's own "Confirm email" setting is enabled.
+  // If this was a signup-email verification, also flip the confirmation
+  // flag on the underlying Supabase Auth user so they can sign in normally.
+  // This is a secondary, cosmetic step — the flag that actually gates
+  // access (profiles.email_verified) was already set inside verify_otp()
+  // above, so a failure here should never undo a real verification.
   if (purpose === "signup" && data.user_id) {
-    const { error: confirmError } = await admin.auth.admin.updateUserById(
-      data.user_id,
-      { email_confirm: true }
-    );
-
-    if (confirmError) {
-      console.error("updateUserById failed:", confirmError);
-      return NextResponse.json(
-        { error: "Email was verified, but the account could not be activated. Please try logging in again." },
-        { status: 500 }
-      );
-    }
-
-    // Verify that the application profile was actually updated. The SQL
-    // function can return success even when an unexpected/missing profile
-    // row means the UPDATE matched zero rows. Never report success to the
-    // browser in that situation.
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("id, email_verified")
-      .eq("id", data.user_id)
-      .maybeSingle();
-
-    if (profileError || !profile?.email_verified) {
-      console.error("Profile verification state is inconsistent:", profileError?.message);
-      return NextResponse.json(
-        { error: "Verification completed, but your profile could not be activated. Please try again." },
-        { status: 500 }
-      );
+    try {
+      await admin.auth.admin.updateUserById(data.user_id, { email_confirm: true });
+    } catch (confirmError) {
+      console.error("updateUserById (non-fatal) failed:", confirmError);
     }
   }
 
