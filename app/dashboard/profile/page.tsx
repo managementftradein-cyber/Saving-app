@@ -70,10 +70,10 @@ export default async function ProfilePage() {
       </div>
 
       <div className="rounded-2xl border border-line bg-white divide-y divide-line overflow-hidden mb-4">
-        <div className="flex items-center justify-between px-4 py-3.5 opacity-50">
+        <Link href="/dashboard/wallet/bank-accounts" className="flex items-center justify-between px-4 py-3.5">
           <span className="text-sm font-semibold text-ink">Bank accounts</span>
-          <span className="text-[10px] font-bold text-ink-soft">Coming soon</span>
-        </div>
+          <span className="text-ink-soft">›</span>
+        </Link>
         <div className="flex items-center justify-between px-4 py-3.5 opacity-50">
           <span className="text-sm font-semibold text-ink">Referral program</span>
           <span className="text-[10px] font-bold text-ink-soft">Coming soon</span>

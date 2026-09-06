@@ -57,10 +57,10 @@ privileges) can.
 1. **Run the schema, in order.** In Supabase → SQL Editor:
    `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
    `supabase/schema_otp.sql` → `supabase/schema_community.sql` →
-   `supabase/schema_admin.sql` → `supabase/schema_notifications.sql`. These
-   now include the `GRANT` statements a fresh project needs — see the note
-   below if you're patching an already-running project instead of starting
-   clean.
+   `supabase/schema_admin.sql` → `supabase/schema_notifications.sql` →
+   `supabase/schema_bank_accounts.sql`. These now include the `GRANT`
+   statements a fresh project needs — see the note below if you're
+   patching an already-running project instead of starting clean.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by
@@ -226,9 +226,52 @@ header — see `.env.local.example`). Note: Vercel's free Hobby plan only
 runs cron jobs once a day, which is exactly what this one needs, so no
 upgrade required.
 
-Every planned slice from the original flowchart is now built. From here,
-it's refinement — real bank-account linking for withdrawals, a referral
-system, badges/rewards, or whatever surfaces as you actually use it.
+## What bank account linking + withdrawals adds
+
+Until now, money could come INTO the platform (Paystack deposits) but
+never actually leave it — `withdraw_from_goal` only moved money from a
+goal back into the in-app wallet. `supabase/schema_bank_accounts.sql`
+adds real payouts via Paystack Transfers.
+
+Because this is the first flow where money genuinely leaves the platform,
+the sequencing is deliberately conservative:
+
+1. **Reserve first** — `reserve_withdrawal()` deducts the wallet balance
+   and creates a `'pending'` ledger row *before* any Paystack API call.
+   The balance can never reflect money that's simultaneously gone from the
+   wallet and never sent.
+2. **Attempt the transfer** — `/api/wallet/withdraw-to-bank` calls
+   Paystack's transfer API. If that call fails outright (network error,
+   Paystack rejects it, or the account has OTP-for-transfers enabled,
+   which a customer-facing flow can't complete), the reservation is
+   refunded immediately via `resolve_withdrawal(..., false)`.
+3. **Webhook resolves it** — `transfer.success` / `transfer.failed` /
+   `transfer.reversed` events are the actual source of truth, matched by
+   the transaction's own ID (passed as Paystack's `reference` when
+   initiating). A refund on failure, a confirmation on success.
+
+Adding a bank account requires Paystack to resolve the account number to
+a real account name first (`/api/bank-accounts/resolve`) — you can't save
+an account you haven't verified actually exists. Withdrawals also require
+`kyc_status = 'verified'`, enforced inside `reserve_withdrawal()` itself,
+not just in the UI.
+
+```
+app/dashboard/wallet/bank-accounts/  List, add (with verification), remove
+app/dashboard/wallet/withdraw/       Withdraw to a linked account
+app/api/banks/                        Bank list for the dropdown
+app/api/bank-accounts/                Resolve, create, delete
+app/api/wallet/withdraw-to-bank/      Reserve + initiate transfer
+```
+
+**One Paystack setting to check**: Settings → Preferences → Transfers —
+make sure OTP-for-transfers is OFF, or every withdrawal will fail with
+the OTP error message above (that OTP goes to the business's registered
+phone, which a customer flow has no way to enter).
+
+Every planned slice from the original flowchart is now built, plus this
+refinement. From here it's whatever surfaces as you actually use it —
+a referral system, badges/rewards, or fixes to anything above.
 
 ## Required Supabase privilege migration
 

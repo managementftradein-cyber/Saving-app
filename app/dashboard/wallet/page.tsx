@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatKobo } from "@/lib/format";
@@ -23,11 +24,15 @@ export default async function WalletPage() {
 
   const TYPE_LABEL: Record<string, string> = {
     deposit: "Deposit",
-    withdrawal: "Withdrawal",
+    withdrawal: "Withdrawal to bank",
     transfer_to_goal: "Transfer to goal",
     transfer_from_goal: "Withdrawal from goal",
   };
   const IS_CREDIT = new Set(["deposit", "transfer_from_goal"]);
+  const STATUS_STYLE: Record<string, string> = {
+    pending: "bg-[#FDF3E7] text-[#8A5A1E]",
+    failed: "bg-[#FCECEB] text-[#C5453A]",
+  };
 
   return (
     <main className="px-5 py-6">
@@ -38,10 +43,26 @@ export default async function WalletPage() {
         <p className="font-display font-extrabold text-2xl mt-1.5">
           {formatKobo(wallet?.balance_kobo)}
         </p>
-        <div className="mt-4">
-          <AddMoneyButton />
+        <div className="mt-4 flex gap-2">
+          <div className="flex-1">
+            <AddMoneyButton />
+          </div>
+          <Link
+            href="/dashboard/wallet/withdraw"
+            className="flex-1 bg-white/16 rounded-xl py-2.5 text-sm font-bold text-center"
+          >
+            Withdraw
+          </Link>
         </div>
       </div>
+
+      <Link
+        href="/dashboard/wallet/bank-accounts"
+        className="mt-3 flex items-center justify-between rounded-2xl border border-line bg-white p-3.5"
+      >
+        <span className="text-xs font-semibold text-navy">Manage bank accounts</span>
+        <span className="text-ink-soft">›</span>
+      </Link>
 
       <div className="mt-6">
         <h2 className="font-display font-extrabold text-sm text-navy mb-2.5">
@@ -56,9 +77,16 @@ export default async function WalletPage() {
           {transactions?.map((tx) => (
             <div key={tx.id} className="flex items-center justify-between px-4 py-3">
               <div>
-                <p className="text-[13px] font-semibold text-ink">
-                  {tx.description ?? TYPE_LABEL[tx.type] ?? tx.type}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[13px] font-semibold text-ink">
+                    {tx.description ?? TYPE_LABEL[tx.type] ?? tx.type}
+                  </p>
+                  {tx.status !== "success" && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize ${STATUS_STYLE[tx.status]}`}>
+                      {tx.status}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-ink-soft mt-0.5">
                   {new Date(tx.created_at).toLocaleString("en-NG", {
                     dateStyle: "medium",
