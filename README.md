@@ -58,9 +58,10 @@ privileges) can.
    `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
    `supabase/schema_otp.sql` → `supabase/schema_community.sql` →
    `supabase/schema_admin.sql` → `supabase/schema_notifications.sql` →
-   `supabase/schema_bank_accounts.sql`. These now include the `GRANT`
-   statements a fresh project needs — see the note below if you're
-   patching an already-running project instead of starting clean.
+   `supabase/schema_bank_accounts.sql` → `supabase/schema_referral.sql` →
+   `supabase/schema_rewards.sql`. These now include the `GRANT` statements
+   a fresh project needs — see the note below if you're patching an
+   already-running project instead of starting clean.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by
@@ -272,6 +273,71 @@ phone, which a customer flow has no way to enter).
 Every planned slice from the original flowchart is now built, plus this
 refinement. From here it's whatever surfaces as you actually use it —
 a referral system, badges/rewards, or fixes to anything above.
+
+## Design system: dark mode + desktop layout
+
+Colors that mean "surface, text, border, background" are now CSS
+variables (`app/globals.css`), switched by a `.dark` class on `<html>` —
+so `bg-surface`, `text-navy`, `text-ink`, `border-line` etc. automatically
+flip everywhere they're used, with zero changes needed to individual
+pages. Brand accents (`blue`, `blue-deep`, `success`, `amber`, and a
+static `brand-navy` reserved for gradients) stay constant across both
+themes.
+
+- `components/theme-toggle.tsx` — the switch, in Profile → Dark mode.
+  Preference is saved to `localStorage` and applied via an inline script
+  in `app/layout.tsx` that runs before paint, so there's no flash of the
+  wrong theme on load.
+- `components/app-shell.tsx` — on screens wider than ~900px, the app
+  renders as a fixed-width (440px) card centered on a soft decorative
+  background, instead of stretching full-bleed. Applied to
+  `/dashboard/*`, `/auth/*`, and `/onboarding/*` layouts. **Deliberately
+  NOT applied to `/admin`**, which is meant to use the full desktop width
+  like a normal web app, not the phone-width shell.
+- The splash page (`app/page.tsx`) gets its own full-bleed two-column
+  treatment on desktop — marketing copy and feature highlights on the
+  left, the sign-up/log-in card on the right — rather than being
+  squeezed into the phone-width shell, since a landing page benefits from
+  more room to make the case for the app.
+
+## What the referral program adds
+
+`supabase/schema_referral.sql` — every profile gets a short referral code
+(auto-generated, `profiles.referral_code`). The reward — ₦500 — fires on
+the **referred person's first successful deposit**, not on signup alone;
+rewarding signup would be trivially gameable (create accounts, refer
+yourself), while requiring real money to move means they actually became
+a user. A referral code can be captured via a `?ref=CODE` link
+(`/dashboard/referral` has a one-tap copy button for exactly this) or
+typed in manually on the signup form.
+
+## What rewards & badges adds
+
+`supabase/schema_rewards.sql` — six badges, all awarded automatically by
+database triggers on events that were already happening (first deposit,
+first goal created, a goal fully funded, KYC verified, first community
+post, first successful referral) — never by app code manually granting
+one, so a badge can't be faked by calling an API directly. `/dashboard/rewards`
+shows all badges, locked ones dimmed with a 🔒 until earned.
+
+## Where KYC actually stands
+
+Worth being direct about this: KYC today is **self-attested and manually
+reviewed**, not real identity verification. A user taps "Start KYC," that
+sets `kyc_status = 'pending'`, and an admin approves or rejects it from
+`/admin/users/[userId]` — there's no BVN/NIN check, no document upload,
+no liveness/selfie match. That's enough to gate bank withdrawals behind
+*some* review step, but it is not regulatory-grade KYC for a real
+fintech product.
+
+Real KYC would mean integrating a verification provider — Paystack has
+BVN/NIN verification endpoints, or dedicated Nigerian KYC providers like
+Dojah, YouVerify, or Smile Identity offer document + selfie + liveness
+checks. That's a meaningfully sized feature on its own (provider account,
+document storage considerations, a review queue that shows the actual
+submitted documents to an admin) — worth doing deliberately rather than
+folded into an unrelated request. Say the word when you want to build it
+and we'll scope it properly.
 
 ## Required Supabase privilege migration
 
