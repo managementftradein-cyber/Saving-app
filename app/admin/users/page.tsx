@@ -45,7 +45,7 @@ export default async function AdminUsersPage({
         )}
       </div>
 
-      <div className="rounded-2xl border border-line bg-white divide-y divide-line overflow-hidden">
+      <div className="rounded-2xl border border-line bg-surface divide-y divide-line overflow-hidden">
         {users?.map((u) => (
           <Link
             key={u.id}

@@ -58,7 +58,7 @@ export default async function WalletPage() {
 
       <Link
         href="/dashboard/wallet/bank-accounts"
-        className="mt-3 flex items-center justify-between rounded-2xl border border-line bg-white p-3.5"
+        className="mt-3 flex items-center justify-between rounded-2xl border border-line bg-surface p-3.5"
       >
         <span className="text-xs font-semibold text-navy">Manage bank accounts</span>
         <span className="text-ink-soft">›</span>
@@ -73,7 +73,7 @@ export default async function WalletPage() {
           <p className="text-sm text-ink-soft">No transactions yet.</p>
         )}
 
-        <div className="rounded-2xl border border-line bg-white divide-y divide-line">
+        <div className="rounded-2xl border border-line bg-surface divide-y divide-line">
           {transactions?.map((tx) => (
             <div key={tx.id} className="flex items-center justify-between px-4 py-3">
               <div>

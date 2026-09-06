@@ -33,7 +33,7 @@ export default function CommentForm({ postId }: { postId: string }) {
 
   return (
     <div className="mt-5 sticky bottom-[84px]">
-      <div className="flex gap-2 bg-white rounded-2xl border border-line p-2">
+      <div className="flex gap-2 bg-surface rounded-2xl border border-line p-2">
         <input
           value={body}
           onChange={(e) => setBody(e.target.value)}

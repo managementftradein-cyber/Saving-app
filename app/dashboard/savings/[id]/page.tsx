@@ -36,7 +36,7 @@ export default async function GoalDetailPage({
         {goal.status}
       </span>
 
-      <div className="mt-5 rounded-2xl border border-line bg-white p-4">
+      <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
         <div className="h-[8px] rounded-full bg-sky mb-2 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-blue to-blue-deep"

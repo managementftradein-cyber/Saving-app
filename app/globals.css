@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------
+   Theme tokens. Colors that mean "background/surface/text/border" are
+   CSS variables here, switched by a `.dark` class on <html> — so a
+   Tailwind class like `bg-surface` or `text-navy` automatically flips
+   with the toggle everywhere it's used, with zero per-page changes.
+   Brand accent colors (blue, blue-deep, success, amber, brand-navy) stay
+   constant across themes — they're already saturated enough to read on
+   both a white and a near-black background.
+------------------------------------------------------------------------ */
+:root {
+  --color-page-bg: 244 246 253;      /* F2F6FD */
+  --color-surface: 255 255 255;       /* white cards */
+  --color-sky: 234 242 255;           /* EAF2FF — tinted chip/icon backgrounds */
+  --color-sky-soft: 245 249 255;      /* F5F9FF */
+  --color-navy: 11 46 92;             /* 0B2E5C — heading text */
+  --color-ink: 15 27 45;              /* 0F1B2D — body text */
+  --color-ink-soft: 91 107 133;       /* 5B6B85 — secondary text */
+  --color-line: 220 230 247;          /* DCE6F7 — borders */
+}
+
+.dark {
+  --color-page-bg: 10 16 28;          /* near-black, slightly blue */
+  --color-surface: 20 28 44;          /* dark card */
+  --color-sky: 27 40 64;              /* dark tinted chip background */
+  --color-sky-soft: 16 23 38;
+  --color-navy: 237 243 255;          /* headings become near-white */
+  --color-ink: 226 232 245;           /* body text becomes light */
+  --color-ink-soft: 148 163 190;      /* secondary text, dimmer */
+  --color-line: 41 53 79;             /* dark border */
+}
+
 @layer base {
   h1, h2, h3 {
     @apply font-display;
@@ -9,6 +40,10 @@
   :focus-visible {
     outline: 2px solid theme("colors.blue.deep");
     outline-offset: 2px;
+  }
+  body {
+    @apply bg-sky-soft text-ink;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -18,11 +53,46 @@
       transition-colors hover:bg-navy disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-secondary {
-    @apply bg-white border border-line text-navy font-semibold rounded-2xl py-3.5 px-6
+    @apply bg-surface border border-line text-navy font-semibold rounded-2xl py-3.5 px-6
       transition-colors hover:bg-sky disabled:opacity-50 disabled:pointer-events-none;
   }
   .input-field {
-    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink
       placeholder:text-ink-soft focus:border-blue focus:ring-1 focus:ring-blue outline-none;
+  }
+
+  /* Desktop "fitted" app shell: on screens wider than the mobile column,
+     the app content stays a fixed phone-like width, centered, sitting on
+     a decorative backdrop rather than stretching full-bleed. */
+  .app-shell-bg {
+    @apply min-h-screen;
+    background:
+      radial-gradient(circle at 15% 10%, rgb(var(--color-sky)) 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgb(var(--color-sky)) 0%, transparent 40%),
+      rgb(var(--color-page-bg));
+  }
+  @media (min-width: 900px) {
+    .app-shell-bg {
+      display: flex;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+    .app-shell-frame {
+      width: 100%;
+      max-width: 440px;
+      background: rgb(var(--color-page-bg));
+      border-radius: 28px;
+      box-shadow: 0 30px 80px -30px rgba(11, 46, 92, 0.25);
+      border: 1px solid rgb(var(--color-line));
+      overflow: hidden;
+      min-height: calc(100vh - 80px);
+      position: relative;
+      /* A transformed element becomes the containing block for any
+         position:fixed descendant (per the CSS spec) — this is what
+         keeps the bottom nav's `fixed` positioning locked to this frame's
+         edges on desktop, instead of the full browser viewport, without
+         needing any change to the nav component itself. */
+      transform: translateZ(0);
+    }
   }
 }

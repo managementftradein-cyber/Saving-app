@@ -47,7 +47,7 @@ export default async function AdminOverviewPage() {
         {stats.map((s) => (
           <div
             key={s.label}
-            className={`rounded-2xl border p-4 bg-white ${
+            className={`rounded-2xl border p-4 bg-surface ${
               s.highlight ? "border-amber" : "border-line"
             }`}
           >

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/sign-out-button";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -49,7 +50,7 @@ export default async function ProfilePage() {
         </span>
       </div>
 
-      <div className="rounded-2xl border border-line bg-white divide-y divide-line overflow-hidden mb-4">
+      <div className="rounded-2xl border border-line bg-surface divide-y divide-line overflow-hidden mb-4">
         <Link href="/dashboard/profile/edit" className="flex items-center justify-between px-4 py-3.5">
           <span className="text-sm font-semibold text-ink">Personal information</span>
           <span className="text-ink-soft">›</span>
@@ -69,19 +70,23 @@ export default async function ProfilePage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-line bg-white divide-y divide-line overflow-hidden mb-4">
+      <div className="rounded-2xl border border-line bg-surface divide-y divide-line overflow-hidden mb-4">
         <Link href="/dashboard/wallet/bank-accounts" className="flex items-center justify-between px-4 py-3.5">
           <span className="text-sm font-semibold text-ink">Bank accounts</span>
           <span className="text-ink-soft">›</span>
         </Link>
-        <div className="flex items-center justify-between px-4 py-3.5 opacity-50">
+        <Link href="/dashboard/referral" className="flex items-center justify-between px-4 py-3.5">
           <span className="text-sm font-semibold text-ink">Referral program</span>
-          <span className="text-[10px] font-bold text-ink-soft">Coming soon</span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-3.5 opacity-50">
+          <span className="text-ink-soft">›</span>
+        </Link>
+        <Link href="/dashboard/rewards" className="flex items-center justify-between px-4 py-3.5">
           <span className="text-sm font-semibold text-ink">Rewards &amp; badges</span>
-          <span className="text-[10px] font-bold text-ink-soft">Coming soon</span>
-        </div>
+          <span className="text-ink-soft">›</span>
+        </Link>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-surface overflow-hidden mb-4">
+        <ThemeToggle />
       </div>
 
       {profile?.role === "admin" && (

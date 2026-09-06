@@ -47,7 +47,7 @@ export default async function CommunityPage() {
       <GroupChips groups={groups ?? []} myGroupIds={[...myGroupIds]} />
 
       {!!leaderboard?.length && (
-        <div className="mt-2 mb-5 rounded-2xl border border-line bg-white p-4">
+        <div className="mt-2 mb-5 rounded-2xl border border-line bg-surface p-4">
           <p className="text-xs font-bold text-navy mb-2.5">Top savers this week</p>
           <div className="flex flex-col gap-2">
             {leaderboard.map((row, i) => (
@@ -74,7 +74,7 @@ export default async function CommunityPage() {
         {posts?.map((post) => {
           const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
           return (
-            <div key={post.id} className="rounded-2xl border border-line bg-white p-4">
+            <div key={post.id} className="rounded-2xl border border-line bg-surface p-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-blue text-white flex items-center justify-center text-[11px] font-bold font-display">
                   {(author?.full_name ?? "N E")

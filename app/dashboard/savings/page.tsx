@@ -53,7 +53,7 @@ export default async function SavingsPage() {
             <Link
               key={goal.id}
               href={`/dashboard/savings/${goal.id}`}
-              className="block rounded-2xl border border-line bg-white p-4"
+              className="block rounded-2xl border border-line bg-surface p-4"
             >
               <div className="flex items-start justify-between">
                 <p className="font-semibold text-sm text-ink">{goal.name}</p>

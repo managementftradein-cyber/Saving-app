@@ -41,7 +41,7 @@ export default async function PostDetailPage({
 
   return (
     <main className="px-5 py-6">
-      <div className="rounded-2xl border border-line bg-white p-4">
+      <div className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-blue text-white flex items-center justify-center text-[11px] font-bold font-display">
             {(author?.full_name ?? "N E")
@@ -80,7 +80,7 @@ export default async function PostDetailPage({
             ? comment.profiles[0]
             : comment.profiles;
           return (
-            <div key={comment.id} className="rounded-xl bg-white border border-line p-3">
+            <div key={comment.id} className="rounded-xl bg-surface border border-line p-3">
               <p className="text-[11.5px] font-bold text-navy">
                 {commentAuthor?.full_name ?? "Someone"}
               </p>

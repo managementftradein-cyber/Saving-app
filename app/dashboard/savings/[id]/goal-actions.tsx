@@ -65,7 +65,7 @@ export default function GoalActions({
       )}
 
       {mode && (
-        <div className="rounded-2xl border border-line bg-white p-4">
+        <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="text-sm font-semibold text-navy mb-2">
             {mode === "fund" ? "Move money from wallet" : "Withdraw to wallet"}
           </p>

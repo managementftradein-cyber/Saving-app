@@ -24,7 +24,7 @@ export default async function AdminCommunityPage() {
         {posts?.map((post) => {
           const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
           return (
-            <div key={post.id} className="rounded-2xl border border-line bg-white p-4">
+            <div key={post.id} className="rounded-2xl border border-line bg-surface p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-navy">{author?.full_name ?? "Someone"}</p>

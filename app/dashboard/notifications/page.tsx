@@ -27,6 +27,7 @@ export default async function NotificationsPage() {
     community_reply: { emoji: "💬", bg: "bg-sky" },
     community_like: { emoji: "❤", bg: "bg-[#FCECEB]" },
     savings_reminder: { emoji: "⏰", bg: "bg-[#FDF3E7]" },
+    badge_earned: { emoji: "🏅", bg: "bg-[#FBEFFB]" },
   };
 
   return (

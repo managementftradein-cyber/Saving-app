@@ -1,17 +1,21 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, type FormEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState(
+    searchParams.get("ref")?.toUpperCase() ?? ""
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +33,10 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: {
+          full_name: fullName,
+          referral_code_used: referralCode.trim() || undefined,
+        },
       },
     });
 
@@ -128,6 +135,21 @@ export default function SignupPage() {
           />
         </div>
 
+        <div>
+          <label htmlFor="referralCode" className="text-xs font-semibold text-navy">
+            Referral code <span className="text-ink-soft font-normal">(optional)</span>
+          </label>
+          <input
+            id="referralCode"
+            type="text"
+            value={referralCode}
+            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+            className="input-field mt-1.5"
+            placeholder="e.g. AB12CD3"
+            maxLength={7}
+          />
+        </div>
+
         {error && (
           <p role="alert" className="text-sm text-red-600">
             {error}
@@ -146,5 +168,13 @@ export default function SignupPage() {
         </Link>
       </p>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

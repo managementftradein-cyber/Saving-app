@@ -33,27 +33,27 @@ export default async function AdminUserDetailPage({
       </p>
 
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="rounded-xl border border-line bg-white p-3">
+        <div className="rounded-xl border border-line bg-surface p-3">
           <p className="text-[11px] text-ink-soft">Wallet balance</p>
           <p className="font-bold text-sm mt-1">{formatKobo(wallet?.balance_kobo)}</p>
         </div>
-        <div className="rounded-xl border border-line bg-white p-3">
+        <div className="rounded-xl border border-line bg-surface p-3">
           <p className="text-[11px] text-ink-soft">Active goals</p>
           <p className="font-bold text-sm mt-1">
             {goals?.filter((g) => g.status === "active").length ?? 0}
           </p>
         </div>
-        <div className="rounded-xl border border-line bg-white p-3">
+        <div className="rounded-xl border border-line bg-surface p-3">
           <p className="text-[11px] text-ink-soft">Email</p>
           <p className="font-bold text-sm mt-1">{profile.email_verified ? "Verified" : "Unverified"}</p>
         </div>
-        <div className="rounded-xl border border-line bg-white p-3">
+        <div className="rounded-xl border border-line bg-surface p-3">
           <p className="text-[11px] text-ink-soft">Phone</p>
           <p className="font-bold text-sm mt-1">{profile.phone ?? "—"}</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-white p-4">
+      <div className="rounded-2xl border border-line bg-surface p-4">
         <p className="text-xs font-bold text-navy mb-1">KYC status</p>
         <p className="text-sm text-ink-soft mb-3 capitalize">
           {profile.kyc_status.replace("_", " ")}
@@ -64,7 +64,7 @@ export default async function AdminUserDetailPage({
       {!!goals?.length && (
         <div className="mt-5">
           <p className="text-xs font-bold text-navy mb-2">Savings goals</p>
-          <div className="rounded-2xl border border-line bg-white divide-y divide-line">
+          <div className="rounded-2xl border border-line bg-surface divide-y divide-line">
             {goals.map((g) => (
               <div key={g.id} className="flex justify-between px-4 py-2.5 text-[13px]">
                 <span>{g.name}</span>

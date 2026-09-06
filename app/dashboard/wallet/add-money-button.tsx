@@ -45,7 +45,7 @@ export default function AddMoneyButton() {
   }
 
   return (
-    <div className="bg-white rounded-xl p-3">
+    <div className="bg-surface rounded-xl p-3">
       <input
         type="number"
         min="100"

@@ -31,7 +31,7 @@ export default async function BankAccountsPage() {
 
       <div className="mt-5 flex flex-col gap-3">
         {accounts?.map((acc) => (
-          <div key={acc.id} className="rounded-2xl border border-line bg-white p-4 flex items-center justify-between">
+          <div key={acc.id} className="rounded-2xl border border-line bg-surface p-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-ink">{acc.bank_name}</p>
               <p className="text-[12px] text-ink-soft mt-0.5">

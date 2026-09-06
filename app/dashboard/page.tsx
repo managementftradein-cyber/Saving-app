@@ -55,7 +55,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-[22px] bg-gradient-to-br from-navy to-blue-deep text-white p-6">
+      <div className="mt-6 rounded-[22px] bg-gradient-to-br from-brand-navy to-blue-deep text-white p-6">
         <p className="text-xs uppercase tracking-wide opacity-75">
           Total savings
         </p>
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-line bg-white p-4 flex items-center justify-between">
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-4 flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-navy">Wallet balance</p>
           <p className="text-lg font-display font-extrabold text-ink mt-0.5">
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-line bg-white p-4">
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <p className="text-xs font-semibold text-navy">KYC status</p>
         <p className="text-sm text-ink-soft mt-1 capitalize">
           {profile?.kyc_status?.replace("_", " ") ?? "Not started"}
