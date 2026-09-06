@@ -57,9 +57,10 @@ privileges) can.
 1. **Run the schema, in order.** In Supabase → SQL Editor:
    `supabase/schema.sql` → `supabase/schema_savings_wallet.sql` →
    `supabase/schema_otp.sql` → `supabase/schema_community.sql` →
-   `supabase/schema_admin.sql`. These now include the `GRANT` statements a
-   fresh project needs — see the note below if you're patching an
-   already-running project instead of starting clean.
+   `supabase/schema_admin.sql` → `supabase/schema_notifications.sql`. These
+   now include the `GRANT` statements a fresh project needs — see the note
+   below if you're patching an already-running project instead of starting
+   clean.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by
@@ -192,11 +193,42 @@ Find your ID with the query in the comments at the bottom of that file.
 Then visit `/admin` — ordinary users get redirected straight back to
 `/dashboard` if they try.
 
-## Next slices
+## What notifications adds
 
-- **Notifications** — deposit/withdrawal alerts, savings reminders.
+`supabase/schema_notifications.sql` — a `notifications` table, populated
+entirely by database triggers on tables that already exist, not by app
+code calling an insert after the fact (so a notification can never happen
+without the real event, and can't be faked by calling an API directly):
 
-Say the word and we'll build it the same way.
+- A deposit or goal withdrawal lands in `wallet_transactions` → trigger
+  fires → notification created.
+- Someone comments or likes your community post → trigger fires →
+  notification created (skips your own likes/comments on your own post).
+- A daily cron job (`/api/cron/savings-reminders`, scheduled in
+  `vercel.json`) finds users with an active goal who haven't transferred
+  anything to it in 7+ days and haven't already been reminded in the last
+  7, creates an in-app notification, and sends a nudge email via Resend.
+
+Marking a notification read goes through a column-restricted grant —
+same pattern as the profile security fix — so a user can flip their own
+`read_at` but can never rewrite a notification's title or body.
+
+```
+components/notification-bell.tsx   Bell icon with live unread-count dot
+app/dashboard/notifications/       Full list, mark-as-read
+app/api/notifications/              Mark one / mark all read
+app/api/cron/savings-reminders/     Scheduled reminder job
+```
+
+**Setup**: run `supabase/schema_notifications.sql`, add `CRON_SECRET` to
+your env vars (Vercel sends it automatically as the cron job's auth
+header — see `.env.local.example`). Note: Vercel's free Hobby plan only
+runs cron jobs once a day, which is exactly what this one needs, so no
+upgrade required.
+
+Every planned slice from the original flowchart is now built. From here,
+it's refinement — real bank-account linking for withdrawals, a referral
+system, badges/rewards, or whatever surfaces as you actually use it.
 
 ## Required Supabase privilege migration
 

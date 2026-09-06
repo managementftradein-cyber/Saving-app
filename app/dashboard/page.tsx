@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatKobo } from "@/lib/format";
 import SignOutButton from "@/components/sign-out-button";
+import NotificationBell from "@/components/notification-bell";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -46,8 +47,11 @@ export default async function DashboardPage() {
             {firstName}
           </h1>
         </div>
-        <div className="w-9 h-9 rounded-full bg-blue text-white flex items-center justify-center font-display font-bold text-xs">
-          {initials}
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <div className="w-9 h-9 rounded-full bg-blue text-white flex items-center justify-center font-display font-bold text-xs">
+            {initials}
+          </div>
         </div>
       </div>
 
