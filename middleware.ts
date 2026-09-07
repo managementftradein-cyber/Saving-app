@@ -94,6 +94,18 @@ export async function middleware(request: NextRequest) {
       return redirect(redirectUrl);
     }
 
+    // If this account has a verified authenticator app enrolled, a
+    // password-only session (aal1) isn't enough — checked here too, not
+    // just at the login page, so a session that has a pending MFA
+    // challenge can't reach protected routes by navigating directly
+    // (e.g. a tab closed mid-challenge, or a session from another device).
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      const redirectUrl = new URL("/auth/mfa-challenge", request.url);
+      redirectUrl.searchParams.set("next", request.nextUrl.pathname);
+      return redirect(redirectUrl);
+    }
+
     // Admin routes need the role check too — a verified but ordinary user
     // gets bounced to their own dashboard, not shown an admin-specific error
     // page that would confirm the route even exists.

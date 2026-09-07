@@ -59,9 +59,10 @@ privileges) can.
    `supabase/schema_otp.sql` → `supabase/schema_community.sql` →
    `supabase/schema_admin.sql` → `supabase/schema_notifications.sql` →
    `supabase/schema_bank_accounts.sql` → `supabase/schema_referral.sql` →
-   `supabase/schema_rewards.sql`. These now include the `GRANT` statements
-   a fresh project needs — see the note below if you're patching an
-   already-running project instead of starting clean.
+   `supabase/schema_rewards.sql` → `supabase/schema_kyc.sql`. These now
+   include the `GRANT` statements a fresh project needs — see the note
+   below if you're patching an already-running project instead of
+   starting clean.
 
 2. **Turn OFF "Confirm email."** In Supabase → Authentication → Providers →
    Email, disable "Confirm email." Verification is now handled entirely by
@@ -320,24 +321,77 @@ post, first successful referral) — never by app code manually granting
 one, so a badge can't be faked by calling an API directly. `/dashboard/rewards`
 shows all badges, locked ones dimmed with a 🔒 until earned.
 
-## Where KYC actually stands
+## What real KYC (BVN verification) adds
 
-Worth being direct about this: KYC today is **self-attested and manually
-reviewed**, not real identity verification. A user taps "Start KYC," that
-sets `kyc_status = 'pending'`, and an admin approves or rejects it from
-`/admin/users/[userId]` — there's no BVN/NIN check, no document upload,
-no liveness/selfie match. That's enough to gate bank withdrawals behind
-*some* review step, but it is not regulatory-grade KYC for a real
-fintech product.
+`supabase/schema_kyc.sql` replaces the self-attested KYC path with actual
+verification. A user enters their BVN and date of birth
+(`/dashboard/kyc`); the server resolves the BVN via Paystack
+(`GET /bank/resolve_bvn/:bvn`) and checks the returned date of birth
+against what they entered. A match verifies instantly — no waiting on an
+admin. This costs a small Paystack fee per lookup (₦10 as of writing,
+with some free calls per month — check current pricing before high
+volume). The admin approve/reject flow (`/admin/users/[userId]`) still
+exists as a manual override for edge cases.
 
-Real KYC would mean integrating a verification provider — Paystack has
-BVN/NIN verification endpoints, or dedicated Nigerian KYC providers like
-Dojah, YouVerify, or Smile Identity offer document + selfie + liveness
-checks. That's a meaningfully sized feature on its own (provider account,
-document storage considerations, a review queue that shows the actual
-submitted documents to an admin) — worth doing deliberately rather than
-folded into an unrelated request. Say the word when you want to build it
-and we'll scope it properly.
+Two real safeguards came with this, not just the verification itself:
+
+- **Rate-limited attempts** — 5 BVN checks per user per 24 hours
+  (`kyc_verification_attempts`), so this can't be used to brute-force
+  guess a date of birth against a BVN someone doesn't own.
+- **Tiered deposit caps** — until `kyc_status = 'verified'`, a wallet's
+  balance is capped at ₦50,000 (`get_deposit_cap_kobo`), a rough analogue
+  of Nigeria's CBN tiered KYC framework. This is enforced in
+  `/api/paystack/initialize`, checked **before** the Paystack charge
+  starts — rejecting it after payment succeeds would mean the customer's
+  money is taken but stuck, since crediting a confirmed charge always
+  has to succeed.
+
+Note the exact field names Paystack's `resolve_bvn` response uses
+(`formatted_dob` vs `dob` in `app/api/kyc/verify-bvn/route.ts`) are worth
+double-checking against their current docs before relying on this in
+production — third-party API response shapes can shift.
+
+## What two-factor authentication adds
+
+Built on Supabase's native TOTP support (`supabase.auth.mfa`) rather than
+a custom implementation — it's free, enabled by default on every
+Supabase project, and battle-tested.
+
+- `/dashboard/profile/security/2fa` — enroll (scan a QR code with any
+  authenticator app), confirm with a 6-digit code, or remove it later.
+- `/auth/mfa-challenge` — after a correct password, an account with a
+  verified authenticator needs this second step before reaching anything
+  protected. Checked in **both** the login page and `middleware.ts`, so a
+  session that hasn't completed the challenge (e.g., a closed tab
+  mid-flow) can't reach `/dashboard` by navigating there directly.
+
+If `enroll()` ever fails outright, double check Authentication → Settings
+in the Supabase dashboard for an MFA toggle — it should be on by default,
+but dashboard defaults can vary.
+
+## Forgot password
+
+Standard Supabase recovery flow: `/auth/forgot-password` requests a reset
+link via `resetPasswordForEmail`, `/auth/reset-password` handles the
+callback and sets a new password. The request page always shows the same
+"check your email" success state regardless of whether the address is
+registered — confirming or denying that would leak which emails have
+accounts.
+
+## Two other fixes in this batch
+
+- **Bottom nav icons** — these were plain filled circles the whole time,
+  not real icons. Replaced with actual per-tab SVGs
+  (`components/bottom-nav.tsx`).
+- **Community posts silently not showing** — same root-cause pattern as
+  the middleware bug earlier: the page only destructured `data` from the
+  Supabase query, discarding any `error`, so a failed query looked
+  identical to an empty feed. Now surfaces the real error on screen. The
+  most likely actual cause: `supabase/migration_reload_schema_cache.sql`
+  — PostgREST caches foreign-key relationships and doesn't always notice
+  a schema change made via the SQL Editor (like the
+  `community_posts.user_id → profiles` fix from earlier) without being
+  told to reload.
 
 ## Required Supabase privilege migration
 

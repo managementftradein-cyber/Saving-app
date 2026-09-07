@@ -12,22 +12,31 @@ export default async function CommunityPage() {
 
   if (!user) redirect("/auth/login");
 
-  const [{ data: posts }, { data: groups }, { data: myGroups }, { data: leaderboard }, { data: myLikes }] =
-    await Promise.all([
-      supabase
-        .from("community_posts")
-        .select("id, body, kind, like_count, comment_count, created_at, user_id, profiles(full_name)")
-        .order("created_at", { ascending: false })
-        .limit(20),
-      supabase.from("community_groups").select("id, name").order("name"),
-      supabase.from("community_group_members").select("group_id").eq("user_id", user.id),
-      supabase
-        .from("weekly_savings_leaderboard")
-        .select("*")
-        .gt("saved_this_week_kobo", 0)
-        .limit(3),
-      supabase.from("community_likes").select("post_id").eq("user_id", user.id),
-    ]);
+  const [
+    { data: posts, error: postsError },
+    { data: groups },
+    { data: myGroups },
+    { data: leaderboard },
+    { data: myLikes },
+  ] = await Promise.all([
+    supabase
+      .from("community_posts")
+      .select("id, body, kind, like_count, comment_count, created_at, user_id, profiles(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(20),
+    supabase.from("community_groups").select("id, name").order("name"),
+    supabase.from("community_group_members").select("group_id").eq("user_id", user.id),
+    supabase
+      .from("weekly_savings_leaderboard")
+      .select("*")
+      .gt("saved_this_week_kobo", 0)
+      .limit(3),
+    supabase.from("community_likes").select("post_id").eq("user_id", user.id),
+  ]);
+
+  if (postsError) {
+    console.error("Failed to load community posts:", postsError.message);
+  }
 
   const myGroupIds = new Set((myGroups ?? []).map((g) => g.group_id));
   const myLikedPostIds = new Set((myLikes ?? []).map((l) => l.post_id));
@@ -65,7 +74,14 @@ export default async function CommunityPage() {
       )}
 
       <div className="flex flex-col gap-3">
-        {!posts?.length && (
+        {postsError && (
+          <div className="rounded-xl bg-[#FCECEB] border border-[#F3C6C1] p-3">
+            <p className="text-xs font-semibold text-[#C5453A]">
+              Couldn&apos;t load posts: {postsError.message}
+            </p>
+          </div>
+        )}
+        {!postsError && !posts?.length && (
           <p className="text-sm text-ink-soft text-center mt-8">
             No posts yet — be the first to share something.
           </p>

@@ -22,6 +22,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const amountKobo = nairaToKobo(amountNaira);
+
+  // Safeguard: unverified accounts have a capped wallet balance (a rough
+  // analogue of Nigeria's tiered KYC framework). Checked BEFORE the
+  // Paystack charge starts — rejecting AFTER payment would mean the
+  // customer's money is taken but stuck, since crediting always succeeds
+  // once a charge is confirmed.
+  const [{ data: cap }, { data: wallet }] = await Promise.all([
+    supabase.rpc("get_deposit_cap_kobo", { p_user_id: user.id }),
+    supabase.from("wallets").select("balance_kobo").eq("user_id", user.id).single(),
+  ]);
+
+  if (cap !== null && (wallet?.balance_kobo ?? 0) + amountKobo > cap) {
+    return NextResponse.json(
+      {
+        error: `This would put your wallet over the ₦${(cap / 100).toLocaleString(
+          "en-NG"
+        )} limit for unverified accounts. Complete identity verification to remove this limit.`,
+      },
+      { status: 403 }
+    );
+  }
+
   const origin = request.nextUrl.origin;
 
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -32,7 +55,7 @@ export async function POST(request: NextRequest) {
     },
     body: JSON.stringify({
       email: user.email,
-      amount: nairaToKobo(amountNaira),
+      amount: amountKobo,
       currency: "NGN",
       callback_url: `${origin}/dashboard/wallet/callback`,
       metadata: { user_id: user.id },

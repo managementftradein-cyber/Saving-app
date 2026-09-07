@@ -61,7 +61,7 @@ export default async function ProfilePage() {
         </Link>
         {status !== "verified" && (
           <Link
-            href="/onboarding/profile"
+            href="/dashboard/kyc"
             className="flex items-center justify-between px-4 py-3.5"
           >
             <span className="text-sm font-semibold text-ink">Complete KYC verification</span>

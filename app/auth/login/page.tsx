@@ -25,9 +25,8 @@ function LoginForm() {
       password,
     });
 
-    setLoading(false);
-
     if (signInError) {
+      setLoading(false);
       setError(
         signInError.message === "Email not confirmed"
           ? "Verify your email first."
@@ -36,7 +35,20 @@ function LoginForm() {
       return;
     }
 
-    router.push(searchParams.get("next") ?? "/dashboard");
+    const nextPath = searchParams.get("next") ?? "/dashboard";
+
+    // If this account has a verified authenticator app enrolled, password
+    // alone only gets them to aal1 — they still need the TOTP challenge
+    // before reaching anything protected.
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setLoading(false);
+
+    if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      router.push(`/auth/mfa-challenge?next=${encodeURIComponent(nextPath)}`);
+      return;
+    }
+
+    router.push(nextPath);
   }
 
   return (
@@ -64,9 +76,14 @@ function LoginForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="text-xs font-semibold text-navy">
-            Password
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="text-xs font-semibold text-navy">
+              Password
+            </label>
+            <Link href="/auth/forgot-password" className="text-xs font-semibold text-blue-deep">
+              Forgot password?
+            </Link>
+          </div>
           <input
             id="password"
             type="password"
