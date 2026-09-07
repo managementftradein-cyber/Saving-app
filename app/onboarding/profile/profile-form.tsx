@@ -93,7 +93,7 @@ export default function ProfileForm() {
         return;
       }
 
-      window.location.assign("/dashboard");
+      window.location.assign(startKyc ? "/dashboard/kyc" : "/dashboard");
     } catch {
       setError("Something went wrong saving your profile. Please try again.");
     } finally {

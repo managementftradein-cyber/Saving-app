@@ -28,7 +28,7 @@ export default async function WithdrawPage() {
         <div className="mt-6 rounded-2xl border border-amber bg-[#FDF3E7] p-4 text-sm text-[#8A5A1E]">
           KYC verification is required before withdrawing to a bank account.
         </div>
-        <Link href="/onboarding/profile" className="btn-primary mt-4 block text-center">
+        <Link href="/dashboard/kyc" className="btn-primary mt-4 block text-center">
           Complete KYC
         </Link>
       </main>
