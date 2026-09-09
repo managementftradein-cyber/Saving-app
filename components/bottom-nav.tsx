@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactElement } from "react";
 
-const ICONS: Record<string, JSX.Element> = {
+const ICONS: Record<string, ReactElement> = {
   home: (
     <>
       <path d="M12 2C7 6 4 9 4 13a8 8 0 0016 0c0-4-3-7-8-11z" />
