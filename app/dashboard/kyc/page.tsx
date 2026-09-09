@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import KycForm from "./kyc-form";
@@ -10,11 +11,13 @@ export default async function KycPage() {
 
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("kyc_status, bvn_verified")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: accounts }] = await Promise.all([
+    supabase.from("profiles").select("kyc_status").eq("id", user.id).single(),
+    supabase
+      .from("bank_accounts")
+      .select("id, bank_name, account_number, account_name")
+      .eq("user_id", user.id),
+  ]);
 
   if (profile?.kyc_status === "verified") {
     return (
@@ -32,5 +35,23 @@ export default async function KycPage() {
     );
   }
 
-  return <KycForm />;
+  // Paystack's BVN match requires an account number tied to that BVN — we
+  // use an already-linked, already-verified bank account rather than
+  // asking the person to type one in again.
+  if (!accounts?.length) {
+    return (
+      <main className="px-5 py-6 text-center">
+        <h1 className="font-display font-extrabold text-xl text-navy">Verify your identity</h1>
+        <p className="text-sm text-ink-soft mt-3 leading-relaxed">
+          Identity verification checks your BVN against a bank account you
+          own. Link one first to continue.
+        </p>
+        <Link href="/dashboard/wallet/bank-accounts/new" className="btn-primary inline-block mt-5">
+          Add bank account
+        </Link>
+      </main>
+    );
+  }
+
+  return <KycForm accounts={accounts} />;
 }

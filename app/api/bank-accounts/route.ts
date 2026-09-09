@@ -18,6 +18,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
+  // Idempotency check: if this exact account is already linked for this
+  // user (e.g. a retried request after a slow response, or a duplicate
+  // tap), just return the existing row instead of creating a second
+  // Paystack recipient and hitting the unique constraint on
+  // paystack_recipient_code — Paystack itself reuses the same recipient
+  // for a repeat account_number + bank_code, so a second INSERT would
+  // always collide.
+  const { data: existing } = await supabase
+    .from("bank_accounts")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("account_number", accountNumber)
+    .eq("bank_code", bankCode)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ success: true, bankAccountId: existing.id, alreadyLinked: true });
+  }
+
   // Create the Paystack transfer recipient FIRST — if this fails, nothing
   // is saved locally, so there's never a bank_accounts row pointing at a
   // recipient that doesn't actually exist on Paystack's side.
@@ -58,6 +77,29 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
+    // Race condition fallback: two rapid duplicate requests could both
+    // pass the existence check above before either commits. If the
+    // insert fails specifically on the recipient-code constraint, treat
+    // it the same as the idempotency check above rather than surfacing
+    // a confusing raw database error.
+    if (error.code === "23505") {
+      const { data: retryExisting } = await supabase
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("account_number", accountNumber)
+        .eq("bank_code", bankCode)
+        .maybeSingle();
+
+      if (retryExisting) {
+        return NextResponse.json({
+          success: true,
+          bankAccountId: retryExisting.id,
+          alreadyLinked: true,
+        });
+      }
+    }
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
