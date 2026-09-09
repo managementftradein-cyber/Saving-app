@@ -23,6 +23,12 @@ create table if not exists public.bank_accounts (
 
 create index if not exists bank_accounts_user_idx on public.bank_accounts (user_id);
 
+-- Prevents the same account from ever being linked twice for one user —
+-- matches the idempotency check in app/api/bank-accounts/route.ts.
+alter table public.bank_accounts
+  add constraint bank_accounts_user_account_unique
+  unique (user_id, account_number, bank_code);
+
 -- 2. Extend wallet_transactions to reference a bank account on withdrawals --
 alter table public.wallet_transactions
   add column if not exists bank_account_id uuid references public.bank_accounts(id) on delete set null;

@@ -324,20 +324,29 @@ shows all badges, locked ones dimmed with a 🔒 until earned.
 ## What real KYC (BVN verification) adds
 
 `supabase/schema_kyc.sql` replaces the self-attested KYC path with actual
-verification. A user enters their BVN and date of birth
-(`/dashboard/kyc`); the server resolves the BVN via Paystack
-(`GET /bank/resolve_bvn/:bvn`) and checks the returned date of birth
-against what they entered. A match verifies instantly — no waiting on an
-admin. This costs a small Paystack fee per lookup (₦10 as of writing,
-with some free calls per month — check current pricing before high
-volume). The admin approve/reject flow (`/admin/users/[userId]`) still
-exists as a manual override for edge cases.
+verification. **Note:** this originally used Paystack's `resolve_bvn`
+lookup, which turned out to be deprecated (it now returns "not
+available"). It's rebuilt on Paystack's current endpoint,
+`POST /bvn/match`, which works differently — it doesn't return raw
+personal data at all. Instead you send a BVN *and* a bank account number,
+and it returns `true`/`false` for whether the account and name actually
+match that BVN. That's why `/dashboard/kyc` requires linking a bank
+account first (`/dashboard/wallet/bank-accounts`) rather than asking for
+a typed date of birth — the account is the thing being matched against.
+Costs ₦15/call as of writing, with 10 free calls/month — check current
+Paystack pricing before high volume. The admin approve/reject flow
+(`/admin/users/[userId]`) still exists as a manual override for edge
+cases.
+
+A `is_blacklisted: true` result is treated as a hard rejection (sets
+`kyc_status = 'rejected'`, not just "no match") — that's a real
+compliance signal Paystack is telling you about, not a typo to retry.
 
 Two real safeguards came with this, not just the verification itself:
 
 - **Rate-limited attempts** — 5 BVN checks per user per 24 hours
   (`kyc_verification_attempts`), so this can't be used to brute-force
-  guess a date of birth against a BVN someone doesn't own.
+  guess whose BVN belongs to a given bank account.
 - **Tiered deposit caps** — until `kyc_status = 'verified'`, a wallet's
   balance is capped at ₦50,000 (`get_deposit_cap_kobo`), a rough analogue
   of Nigeria's CBN tiered KYC framework. This is enforced in
@@ -345,11 +354,6 @@ Two real safeguards came with this, not just the verification itself:
   starts — rejecting it after payment succeeds would mean the customer's
   money is taken but stuck, since crediting a confirmed charge always
   has to succeed.
-
-Note the exact field names Paystack's `resolve_bvn` response uses
-(`formatted_dob` vs `dob` in `app/api/kyc/verify-bvn/route.ts`) are worth
-double-checking against their current docs before relying on this in
-production — third-party API response shapes can shift.
 
 ## What two-factor authentication adds
 
