@@ -4,6 +4,7 @@ import { useState, type FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import MediaBackground from "@/components/media-background";
 
 function LoginForm() {
   const router = useRouter();
@@ -52,68 +53,72 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-sm mx-auto">
-      <h1 className="font-display font-extrabold text-2xl text-navy">
-        Welcome back
-      </h1>
-      <p className="text-sm text-ink-soft mt-2">Log in to your Nestegg account.</p>
+    <MediaBackground>
+      <main className="min-h-screen flex flex-col justify-center px-6 py-12">
+        <div className="max-w-sm w-full mx-auto bg-surface/95 backdrop-blur rounded-[28px] shadow-2xl p-7">
+          <h1 className="font-display font-extrabold text-2xl text-navy">
+            Welcome back
+          </h1>
+          <p className="text-sm text-ink-soft mt-2">Log in to your Nestegg account.</p>
 
-      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-        <div>
-          <label htmlFor="email" className="text-xs font-semibold text-navy">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="input-field mt-1.5"
-            placeholder="you@email.com"
-          />
-        </div>
+          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+            <div>
+              <label htmlFor="email" className="text-xs font-semibold text-navy">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field mt-1.5"
+                placeholder="you@email.com"
+              />
+            </div>
 
-        <div>
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs font-semibold text-navy">
-              Password
-            </label>
-            <Link href="/auth/forgot-password" className="text-xs font-semibold text-blue-deep">
-              Forgot password?
+            <div>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-xs font-semibold text-navy">
+                  Password
+                </label>
+                <Link href="/auth/forgot-password" className="text-xs font-semibold text-blue-deep">
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                id="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field mt-1.5"
+                placeholder="Your password"
+              />
+            </div>
+
+            {error && (
+              <p role="alert" className="text-sm text-red-600">
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary mt-2">
+              {loading ? "Logging in…" : "Log in"}
+            </button>
+          </form>
+
+          <p className="text-sm text-ink-soft text-center mt-6">
+            New to Nestegg?{" "}
+            <Link href="/auth/signup" className="text-blue-deep font-semibold">
+              Sign up
             </Link>
-          </div>
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input-field mt-1.5"
-            placeholder="Your password"
-          />
-        </div>
-
-        {error && (
-          <p role="alert" className="text-sm text-red-600">
-            {error}
           </p>
-        )}
-
-        <button type="submit" disabled={loading} className="btn-primary mt-2">
-          {loading ? "Logging in…" : "Log in"}
-        </button>
-      </form>
-
-      <p className="text-sm text-ink-soft text-center mt-6">
-        New to Nestegg?{" "}
-        <Link href="/auth/signup" className="text-blue-deep font-semibold">
-          Sign up
-        </Link>
-      </p>
-    </main>
+        </div>
+      </main>
+    </MediaBackground>
   );
 }
 

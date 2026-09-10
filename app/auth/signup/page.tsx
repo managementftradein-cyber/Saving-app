@@ -4,6 +4,7 @@ import { useState, type FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import MediaBackground from "@/components/media-background";
 
 function SignupForm() {
   const router = useRouter();
@@ -78,96 +79,100 @@ function SignupForm() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-sm mx-auto">
-      <h1 className="font-display font-extrabold text-2xl text-navy">
-        Create your account
-      </h1>
-      <p className="text-sm text-ink-soft mt-2">
-        Takes about a minute. You&apos;ll verify your email next.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-        <div>
-          <label htmlFor="fullName" className="text-xs font-semibold text-navy">
-            Full name
-          </label>
-          <input
-            id="fullName"
-            type="text"
-            required
-            autoComplete="name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="input-field mt-1.5"
-            placeholder="Amaka Johnson"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email" className="text-xs font-semibold text-navy">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="input-field mt-1.5"
-            placeholder="you@email.com"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="text-xs font-semibold text-navy">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input-field mt-1.5"
-            placeholder="At least 8 characters"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="referralCode" className="text-xs font-semibold text-navy">
-            Referral code <span className="text-ink-soft font-normal">(optional)</span>
-          </label>
-          <input
-            id="referralCode"
-            type="text"
-            value={referralCode}
-            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-            className="input-field mt-1.5"
-            placeholder="e.g. AB12CD3"
-            maxLength={7}
-          />
-        </div>
-
-        {error && (
-          <p role="alert" className="text-sm text-red-600">
-            {error}
+    <MediaBackground>
+      <main className="min-h-screen flex flex-col justify-center px-6 py-12">
+        <div className="max-w-sm w-full mx-auto bg-surface/95 backdrop-blur rounded-[28px] shadow-2xl p-7">
+          <h1 className="font-display font-extrabold text-2xl text-navy">
+            Create your account
+          </h1>
+          <p className="text-sm text-ink-soft mt-2">
+            Takes about a minute. You&apos;ll verify your email next.
           </p>
-        )}
 
-        <button type="submit" disabled={loading} className="btn-primary mt-2">
-          {loading ? "Creating account…" : "Sign up"}
-        </button>
-      </form>
+          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+            <div>
+              <label htmlFor="fullName" className="text-xs font-semibold text-navy">
+                Full name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                required
+                autoComplete="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="input-field mt-1.5"
+                placeholder="Amaka Johnson"
+              />
+            </div>
 
-      <p className="text-sm text-ink-soft text-center mt-6">
-        Already have an account?{" "}
-        <Link href="/auth/login" className="text-blue-deep font-semibold">
-          Log in
-        </Link>
-      </p>
-    </main>
+            <div>
+              <label htmlFor="email" className="text-xs font-semibold text-navy">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field mt-1.5"
+                placeholder="you@email.com"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="text-xs font-semibold text-navy">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field mt-1.5"
+                placeholder="At least 8 characters"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="referralCode" className="text-xs font-semibold text-navy">
+                Referral code <span className="text-ink-soft font-normal">(optional)</span>
+              </label>
+              <input
+                id="referralCode"
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="input-field mt-1.5"
+                placeholder="e.g. AB12CD3"
+                maxLength={7}
+              />
+            </div>
+
+            {error && (
+              <p role="alert" className="text-sm text-red-600">
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary mt-2">
+              {loading ? "Creating account…" : "Sign up"}
+            </button>
+          </form>
+
+          <p className="text-sm text-ink-soft text-center mt-6">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-blue-deep font-semibold">
+              Log in
+            </Link>
+          </p>
+        </div>
+      </main>
+    </MediaBackground>
   );
 }
 

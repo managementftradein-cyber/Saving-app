@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MediaBackground from "@/components/media-background";
 
 const FEATURES = [
   {
@@ -32,8 +33,9 @@ const FEATURES = [
 
 export default function SplashPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-brand-navy via-blue-deep to-blue text-white">
-      <div className="max-w-6xl mx-auto min-h-screen flex flex-col lg:flex-row lg:items-center gap-10 px-6 lg:px-12 py-12 lg:py-0">
+    <MediaBackground>
+      <main className="min-h-screen text-white">
+        <div className="max-w-6xl mx-auto min-h-screen flex flex-col lg:flex-row lg:items-center gap-10 px-6 lg:px-12 py-12 lg:py-0">
         {/* Marketing column — only shown at desktop widths */}
         <div className="hidden lg:flex flex-col justify-center flex-1 max-w-lg">
           <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center mb-6">
@@ -105,7 +107,8 @@ export default function SplashPage() {
             </Link>
           </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+    </MediaBackground>
   );
 }
