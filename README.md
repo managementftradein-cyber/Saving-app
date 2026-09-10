@@ -373,6 +373,25 @@ If `enroll()` ever fails outright, double check Authentication → Settings
 in the Supabase dashboard for an MFA toggle — it should be on by default,
 but dashboard defaults can vary.
 
+## Background video/image on splash, login, and signup
+
+`components/media-background.tsx` wraps these three pages in a full-bleed
+video (with an image poster/fallback) and a dark overlay for text
+legibility. **No assets are included** — I can't generate real photo or
+video content — but the code works with zero, one, or both:
+
+- Add `public/videos/auth-bg.mp4` for a looping video background
+- Add `public/images/auth-bg.jpg` as the video's poster frame, or as the
+  entire background if you skip video
+- Add neither and it falls back to the plain gradient these pages had
+  before this feature existed — nothing breaks
+
+See the `README.txt` in each of those two folders for recommended specs
+(keep files small — these are pages people see before they have any
+reason to trust the app yet) and where to find free, properly-licensed
+stock video/photos (Pexels, Coverr, Unsplash all offer downloads under
+licenses that permit this).
+
 ## Forgot password
 
 Standard Supabase recovery flow: `/auth/forgot-password` requests a reset
